@@ -1,10 +1,18 @@
+import { BrowserRouter, Route, Routes } from "react-router-dom"
+import MainLayout from "./layout/Mainlayout"
+import Notes from "./pages/Notes"
+import ChatBot from "./pages/ChatBot"
+
 function App() {
   return (
-    <div>
-      <h1 class="text-3xl font-bold underline">
-        Hello world!
-      </h1>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Notes />}></Route>
+          <Route path="/chatbot" element={<ChatBot />}></Route>
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }
 
