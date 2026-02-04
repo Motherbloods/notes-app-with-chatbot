@@ -13,98 +13,121 @@ function useSmartTextarea(inputContent, setInputContent) {
       const currentLine = lines[lines.length - 1];
 
       // Check for numbered list (1., 2., etc)
-      const numberedMatch = currentLine.match(/^(\d+)\.\s/);
+      const numberedMatch = currentLine.match(/^(\d+)(?:\.?\s*)(.*)$/);
+
       if (numberedMatch) {
-        const currentNum = parseInt(numberedMatch[1]);
+        const currentNum = parseInt(numberedMatch[1], 10);
+        const restText = numberedMatch[2]; // <- "halo", "halo dunia", dll
         const nextNum = currentNum + 1;
 
-        // If line only has number (empty item), exit list mode
-        if (currentLine.trim() === `${currentNum}.`) {
-          e.preventDefault();
-          const newText =
-            textBeforeCursor.slice(0, -currentLine.length) +
-            "\n" +
-            textAfterCursor;
-          setInputContent(newText);
-          setTimeout(() => {
-            textarea.selectionStart = textarea.selectionEnd =
-              cursorPos - currentLine.length + 1;
-          }, 0);
-          return;
-        }
-
         e.preventDefault();
+
+        const normalizedCurrentLine =
+          restText.trim().length > 0
+            ? `${currentNum}. ${restText}`
+            : `${currentNum}.`;
+
+        const textBeforeLine = textBeforeCursor.slice(
+          0,
+          textBeforeCursor.length - currentLine.length,
+        );
+
         const newText =
-          textBeforeCursor + "\n" + nextNum + ". " + textAfterCursor;
+          textBeforeLine +
+          normalizedCurrentLine +
+          "\n" +
+          `${nextNum}. ` +
+          textAfterCursor;
+
         setInputContent(newText);
+
         setTimeout(() => {
           textarea.selectionStart = textarea.selectionEnd =
-            cursorPos + nextNum.toString().length + 3;
+            textBeforeLine.length +
+            normalizedCurrentLine.length +
+            1 +
+            `${nextNum}. `.length;
         }, 0);
+
         return;
       }
 
       // Check for bullet list (-, •)
-      const bulletMatch = currentLine.match(/^[-•]\s/);
+      const bulletMatch = currentLine.match(/^([-•*])\s*(.*)$/);
+
       if (bulletMatch) {
-        // If line only has bullet (empty item), exit list mode
-        if (
-          currentLine.trim() === "-" ||
-          currentLine.trim() === "•" ||
-          currentLine.trim() === "*"
-        ) {
-          e.preventDefault();
-          const newText =
-            textBeforeCursor.slice(0, -currentLine.length) +
-            "\n" +
-            textAfterCursor;
-          setInputContent(newText);
-          setTimeout(() => {
-            textarea.selectionStart = textarea.selectionEnd =
-              cursorPos - currentLine.length + 1;
-          }, 0);
-          return;
-        }
+        const restText = bulletMatch[2];
 
         e.preventDefault();
-        const newText = textBeforeCursor + "\n- " + textAfterCursor;
+
+        // normalize current line
+        const normalizedCurrentLine =
+          restText.trim().length > 0 ? `- ${restText}` : `-`;
+
+        const textBeforeLine = textBeforeCursor.slice(
+          0,
+          textBeforeCursor.length - currentLine.length,
+        );
+
+        const newText =
+          textBeforeLine + normalizedCurrentLine + "\n- " + textAfterCursor;
+
         setInputContent(newText);
+
         setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = cursorPos + 3;
+          textarea.selectionStart = textarea.selectionEnd =
+            textBeforeLine.length + normalizedCurrentLine.length + 1 + 2;
         }, 0);
+
         return;
       }
 
       // Check for checklist ([ ] or [x])
-      const checklistMatch = currentLine.match(/^[-•]?\s*\[([ x])\]\s/);
+      const checklistMatch = currentLine.match(
+        /^([-•*])?\s*\[([ x])\]\s*(.*)$/,
+      );
+
       if (checklistMatch) {
-        // If line only has checkbox (empty item), exit list mode
-        if (
-          currentLine.trim() === "[ ]" ||
-          currentLine.trim() === "[]" ||
-          currentLine.trim() === "[x]" ||
-          currentLine.trim() === "- [ ]" ||
-          currentLine.trim() === "- [x]"
-        ) {
-          e.preventDefault();
+        const checked = checklistMatch[2]; // " " atau "x"
+        const restText = checklistMatch[3];
+
+        e.preventDefault();
+
+        // exit checklist kalau kosong
+        if (restText.trim() === "") {
           const newText =
             textBeforeCursor.slice(0, -currentLine.length) +
             "\n" +
             textAfterCursor;
+
           setInputContent(newText);
+
           setTimeout(() => {
             textarea.selectionStart = textarea.selectionEnd =
               cursorPos - currentLine.length + 1;
           }, 0);
+
           return;
         }
 
-        e.preventDefault();
-        const newText = textBeforeCursor + "\n- [ ] " + textAfterCursor;
+        // normalize current line
+        const normalizedCurrentLine = `- [${checked}] ${restText}`;
+
+        const textBeforeLine = textBeforeCursor.slice(
+          0,
+          textBeforeCursor.length - currentLine.length,
+        );
+
+        const newText =
+          textBeforeLine + normalizedCurrentLine + "\n- [ ] " + textAfterCursor;
+
         setInputContent(newText);
+
         setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = cursorPos + 7;
+          textarea.selectionStart = textarea.selectionEnd =
+            textBeforeLine.length + normalizedCurrentLine.length + 1 + 6;
         }, 0);
+
         return;
       }
     }
