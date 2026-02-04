@@ -1,24 +1,14 @@
 import SearchBar from "./Search";
 import {
-    Calendar,
-    Code2,
-    FileText,
-    Lightbulb,
     Save,
     MessageSquare
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import categories from "../config/categories";
 
 function Sidebar({ search, onSearchChange }) {
     const [notes] = useState([]);
-
-    const categories = {
-        target_harian: { icon: Calendar, label: "Target Harian", color: "text-blue-500", link: "/target_harian" },
-        ide: { icon: Lightbulb, label: "Ide", color: "text-yellow-500", link: "/ide" },
-        kode: { icon: Code2, label: "Kode", color: "text-green-500", link: "/kode" },
-        catatan: { icon: FileText, label: "Catatan", color: "text-purple-500", link: "/catatan" }
-    };
 
     return (
         <div className="w-64 bg-white border-r border-gray-200 p-4">
