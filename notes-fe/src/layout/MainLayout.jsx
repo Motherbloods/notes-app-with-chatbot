@@ -4,8 +4,9 @@ import { useState } from "react";
 
 function MainLayout() {
     const [search, setSearch] = useState("");
+    const [notes] = useState([]);
     return (<div className="flex h-screen">
-        <Sidebar search={search} onSearchChange={setSearch} />
+        <Sidebar notes={notes} search={search} onSearchChange={setSearch} />
         <div className="flex-1 p-4">
             <Outlet />
         </div>

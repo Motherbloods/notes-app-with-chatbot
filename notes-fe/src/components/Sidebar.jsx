@@ -3,12 +3,10 @@ import {
     Save,
     MessageSquare
 } from "lucide-react";
-import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import categories from "../config/categories";
 
-function Sidebar({ search, onSearchChange }) {
-    const [notes] = useState([]);
+function Sidebar({ notes, search, onSearchChange }) {
 
     return (
         <div className="w-64 bg-white border-r border-gray-200 p-4">
