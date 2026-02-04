@@ -24,10 +24,20 @@ function Sidebar({ search, onSearchChange }) {
         <div className="w-64 bg-white border-r border-gray-200 p-4">
             <h1 className="text-2xl font-bold mb-6 text-gray-800">Second Brain</h1>
 
-            <button className="w-full flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white mb-6">
+            <NavLink
+                to="/notes/new"
+                className={({ isActive }) =>
+                    `w-full flex items-center gap-2 px-4 py-2 rounded-lg mb-6 transition
+     ${isActive
+                        ? "bg-blue-700 text-white"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`
+                }
+            >
                 <Save size={20} />
                 <span>New Note</span>
-            </button>
+            </NavLink>
+
 
             <div className="mb-4">
                 <SearchBar keyword={search} onChange={onSearchChange} />
