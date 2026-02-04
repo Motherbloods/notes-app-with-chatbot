@@ -1,10 +1,18 @@
 import { Loader2, Save } from "lucide-react";
 import { useState } from "react";
 import useSmartTextarea from "../hooks/useSmartTextarea";
+import ModalPreview from "../components/ModalPreview";
 
 function Notes() {
+    const [showConfirmation, setShowConfirmation] = useState(false);
+    const [analysisResult, setAnalysisResult] = useState({ category: "ide" });
     const [inputContent, setInputContent] = useState("");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    const saveNote = () => {
+        console.log("Simpan note:", inputContent, analysisResult);
+        setShowConfirmation(false);
+    };
 
     const { textareaRef, handleKeyDown } = useSmartTextarea(inputContent, setInputContent);
 
@@ -13,7 +21,9 @@ function Notes() {
         setTimeout(() => {
             console.log("Analyzed content:", content);
             setIsAnalyzing(false);
+            setShowConfirmation(true)
         }, 1000);
+
     }
     return <div className="flex-1 p-8">
         <h2 className="text-2xl font-bold mb-2 text-gray-800">Paste Anything Here</h2>
@@ -53,6 +63,16 @@ Contoh checklist:
                 </>
             )}
         </button>
+        <ModalPreview
+            isOpen={showConfirmation}
+            onClose={() => setShowConfirmation(false)}
+            inputContent={inputContent}
+            analysisResult={{
+                ...analysisResult,
+                setCategory: (cat) => setAnalysisResult((prev) => ({ ...prev, category: cat })),
+            }}
+            onSave={saveNote}
+        />
     </div>
 }
 
