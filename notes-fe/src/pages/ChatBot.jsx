@@ -1,5 +1,9 @@
 import { ArrowDown, Loader2, MessageSquare, Send } from "lucide-react";
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import useScrollToBottom from "../hooks/useScrollToBottom";
 import ScrollToBottomButton from "../components/ScrollToBottomButton";
 import ListChat from "../components/ListChat";
@@ -107,21 +111,31 @@ function ChatBot() {
                                         : "bg-white border border-gray-200"
                                         }`}
                                 >
-                                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                                    {msg.sources && msg.sources.length > 0 && (
-                                        <div className="mt-2 pt-2 border-t border-gray-200">
-                                            <p className="text-xs text-gray-500 mb-1">Sources:</p>
-                                            {msg.sources.map((src, j) => (
-                                                <div
-                                                    key={j}
-                                                    className="text-xs text-gray-600 bg-gray-50 p-2 rounded mt-1"
-                                                >
-                                                    {src.content.substring(0, 80)}...
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            code({ inline, className, children, ...props }) {
+                                                const match = /language-(\w+)/.exec(className || "");
+                                                return !inline && match ? (
+                                                    <SyntaxHighlighter
+                                                        style={oneDark}
+                                                        language={match[1]}
+                                                        PreTag="div"
+                                                    >
+                                                        {String(children).replace(/\n$/, "")}
+                                                    </SyntaxHighlighter>
+                                                ) : (
+                                                    <code className="bg-gray-100 px-1 rounded">
+                                                        {children}
+                                                    </code>
+                                                );
+                                            },
+                                        }}
+                                    >
+                                        {msg.content}
+                                    </ReactMarkdown>
                                 </div>
+
                             </div>
                         ))
                     )}
