@@ -5,9 +5,9 @@ import { useState } from "react";
 function MainLayout() {
     const [search, setSearch] = useState("");
     const [notes] = useState([]);
-    return (<div className="flex h-screen">
+    return (<div className="flex h-screen overflow-hidden">
         <Sidebar notes={notes} search={search} onSearchChange={setSearch} />
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-4 overflow-hidden">
             <Outlet />
         </div>
     </div>);
