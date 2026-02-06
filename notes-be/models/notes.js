@@ -16,18 +16,18 @@ const noteSchema = new mongoose.Schema(
       index: true,
     },
 
-    status: {
-      type: String,
-      enum: ["draft", "analyzed", "confirmed"],
-      default: "draft",
-      index: true,
-    },
+    // status: {
+    //   type: String,
+    //   enum: ["draft", "analyzed", "confirmed"],
+    //   default: "draft",
+    //   index: true,
+    // },
 
-    analysisStatus: {
-      type: String,
-      enum: ["pending", "processing", "done", "failed"],
-      default: "pending",
-    },
+    // analysisStatus: {
+    //   type: String,
+    //   enum: ["pending", "processing", "done", "failed"],
+    //   default: "pending",
+    // },
 
     content: {
       type: String,
@@ -65,8 +65,13 @@ const noteSchema = new mongoose.Schema(
 
     summary: String,
 
-    error: String,
-
+    errors: [
+      {
+        line: Number,
+        type: String,
+        message: String,
+      },
+    ],
     deletedAt: {
       type: Date,
       default: null,
