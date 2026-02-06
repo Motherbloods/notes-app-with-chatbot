@@ -65,7 +65,7 @@ const noteSchema = new mongoose.Schema(
 
     summary: String,
 
-    errors: [
+    analysisErrors: [
       {
         line: Number,
         type: String,
