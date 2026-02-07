@@ -1,9 +1,11 @@
 import React from "react";
 import { CheckSquare, Square } from "lucide-react";
+
 function renderFormattedContent(note, toggleChecklistItem) {
+  // Code display
   if (note.category === "kode") {
     return (
-      <pre className="bg-gray-900 text-gray-100 p-3 rounded text-xs overflow-auto max-h-64 font-mono">
+      <pre className="bg-gray-900 text-gray-100 p-3 rounded text-xs overflow-auto max-h-64 font-mono leading-relaxed">
         {note.codeMetadata?.formatted || note.content}
       </pre>
     );
@@ -13,13 +15,14 @@ function renderFormattedContent(note, toggleChecklistItem) {
   const elements = [];
   let currentList = [];
   let currentListType = null;
+  let checklistCounter = 0; // Track checklist index for toggle
 
   const flushList = () => {
     if (currentList.length > 0) {
       if (currentListType === "numbered") {
         elements.push(
           <ol
-            key={elements.length}
+            key={`list-${elements.length}`}
             className="list-decimal list-inside space-y-1 my-2"
           >
             {currentList.map((item, i) => (
@@ -27,12 +30,12 @@ function renderFormattedContent(note, toggleChecklistItem) {
                 {item}
               </li>
             ))}
-          </ol>,
+          </ol>
         );
       } else if (currentListType === "bullet") {
         elements.push(
           <ul
-            key={elements.length}
+            key={`list-${elements.length}`}
             className="list-disc list-inside space-y-1 my-2"
           >
             {currentList.map((item, i) => (
@@ -40,7 +43,7 @@ function renderFormattedContent(note, toggleChecklistItem) {
                 {item}
               </li>
             ))}
-          </ul>,
+          </ul>
         );
       }
       currentList = [];
@@ -49,40 +52,41 @@ function renderFormattedContent(note, toggleChecklistItem) {
   };
 
   lines.forEach((line, lineIndex) => {
-    // Checklist
-    const checklistMatch = line.match(/^[-•]?\s*\[([ x])\]\s*(.+)$/);
-    if (checklistMatch && note.checklist) {
-      flushList();
-      const checklistItemIndex =
-        lines
-          .slice(0, lineIndex)
-          .filter((l) => l.match(/^[-•]?\s*\[([ x])\]\s*(.+)$/)).length - 1;
+    // Checklist pattern: - [ ] or - [x] or • [ ] etc.
+    const checklistMatch = line.match(/^([-•]?\s*)\[([ xX])\]\s*(.+)$/);
 
-      const item = note.checklist[checklistItemIndex];
+    if (checklistMatch) {
+      flushList();
+
+      const isChecked = checklistMatch[2].toLowerCase() === 'x';
+      const text = checklistMatch[3];
+      const currentChecklistIndex = checklistCounter;
+      checklistCounter++;
 
       elements.push(
-        <div key={lineIndex} className="flex items-start gap-2 my-1">
+        <div key={`checklist-${lineIndex}`} className="flex items-start gap-2 my-1">
           <button
-            onClick={() => toggleChecklistItem(note.id, checklistItemIndex)}
-            className="mt-1 shrink-0"
+            onClick={() => toggleChecklistItem(note._id || note.id, currentChecklistIndex)}
+            className="mt-0.5 shrink-0 hover:opacity-70 transition-opacity"
+            aria-label={isChecked ? "Uncheck item" : "Check item"}
           >
-            {item?.checked ? (
+            {isChecked ? (
               <CheckSquare size={18} className="text-green-600" />
             ) : (
               <Square size={18} className="text-gray-400" />
             )}
           </button>
           <span
-            className={`text-gray-700 ${item?.checked ? "line-through text-gray-400" : ""}`}
+            className={`text-gray-700 ${isChecked ? "line-through text-gray-400" : ""}`}
           >
-            {item?.text || checklistMatch[2]}
+            {text}
           </span>
-        </div>,
+        </div>
       );
       return;
     }
 
-    // Numbered list
+    // Numbered list pattern: 1. Item
     const numberedMatch = line.match(/^(\d+)\.\s+(.+)$/);
     if (numberedMatch) {
       if (currentListType !== "numbered") {
@@ -93,7 +97,7 @@ function renderFormattedContent(note, toggleChecklistItem) {
       return;
     }
 
-    // Bullet list
+    // Bullet list pattern: - Item or • Item
     const bulletMatch = line.match(/^[-•]\s+(.+)$/);
     if (bulletMatch) {
       if (currentListType !== "bullet") {
@@ -108,12 +112,12 @@ function renderFormattedContent(note, toggleChecklistItem) {
     flushList();
     if (line.trim()) {
       elements.push(
-        <p key={lineIndex} className="text-gray-700 my-1">
+        <p key={`text-${lineIndex}`} className="text-gray-700 my-1">
           {line}
-        </p>,
+        </p>
       );
     } else {
-      elements.push(<div key={lineIndex} className="h-2" />);
+      elements.push(<div key={`space-${lineIndex}`} className="h-2" />);
     }
   });
 
