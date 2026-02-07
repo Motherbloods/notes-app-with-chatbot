@@ -1,17 +1,28 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom"
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import MainLayout from "./layout/Mainlayout"
-import Notes from "./pages/Notes"
-import ChatBot from "./pages/ChatBot"
-import NotesPage from "./pages/NotesPage"
+import routes from "./config/routes.jsx"
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<MainLayout />}>
-          <Route path="/notes/new" element={<Notes />}></Route>
-          <Route path="/notes/:categoryKey" element={<NotesPage />} />
-          <Route path="/chatbot" element={<ChatBot />}></Route>
+          {
+            routes.map((route, index) => {
+              return route.redirectTo ? (
+                <Route
+                  key={index}
+                  path={route.path}
+                  element={<Navigate to={route.redirectTo} />}
+                />
+              ) : (
+                <Route
+                  key={index}
+                  path={route.path}
+                  element={route.element} />
+              )
+            })
+          }
         </Route>
       </Routes>
     </BrowserRouter>
