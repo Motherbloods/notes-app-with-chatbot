@@ -8,3 +8,5 @@ export const getNotesByCategory = (categoryKey) =>
 export const getCategoriesNotesCount = () => client.get("/notes/count");
 export const deleteNoteById = (noteId) =>
   client.delete(`/notes/delete/${noteId}`);
+export const updateNote = (noteId, noteData) =>
+  client.patch(`/notes/${noteId}`, noteData);
