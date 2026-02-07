@@ -33,8 +33,7 @@ function Sidebar({ notesCount, search, onSearchChange }) {
 
             <div className="space-y-1">
                 {Object.entries(categories).map(([key, { icon: Icon, label, color, link }]) => {
-                    const count = notesCount.filter(n => n.category === key).length;
-
+                    const count = notesCount.find(n => n.category === key)?.count || 0;
                     return (
                         <NavLink
                             key={key}
