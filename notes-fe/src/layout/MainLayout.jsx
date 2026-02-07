@@ -1,10 +1,24 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getCategoriesNotesCount } from "../api/notes";
 
 function MainLayout() {
     const [search, setSearch] = useState("");
-    const [notes] = useState([]);
+    const [notes, setNotes] = useState([]);
+
+    useEffect(() => {
+        const fetchCounter = async () => {
+            try {
+                const data = await getCategoriesNotesCount();
+                setNotes(data);
+            } catch (error) {
+                console.error("Error fetching notes:", error);
+            }
+        }
+        fetchCounter();
+    }, []);
+
     return (<div className="flex h-screen overflow-hidden">
         <Sidebar notes={notes} search={search} onSearchChange={setSearch} />
         <div className="flex-1 p-4 overflow-hidden">

@@ -5,6 +5,6 @@ const client = apiClient();
 export const createNotes = (noteData) => client.post("/notes", noteData);
 export const getNotesByCategory = (categoryKey) =>
   client.get(`/notes/category/${categoryKey}`);
-export const getAllNotes = () => client.get("/notes/all");
+export const getCategoriesNotesCount = () => client.get("/notes/count");
 export const deleteNoteById = (noteId) =>
   client.delete(`/notes/delete/${noteId}`);
