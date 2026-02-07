@@ -4,18 +4,21 @@ import useSmartTextarea from "../hooks/useSmartTextarea";
 import ModalPreview from "../components/ModalPreview";
 import { analyzingNotes } from "../api/analyzing";
 import { saveNoteData } from "../services/notesService";
+import { useNotes } from "../context/NotesContext";
 
 function Notes() {
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [analysisResult, setAnalysisResult] = useState({ category: "ide" });
     const [inputContent, setInputContent] = useState("");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const { incrementCounter } = useNotes();
 
     const saveNote = async () => {
         const result = await saveNoteData(inputContent, analysisResult);
         console.log("Simpan note:", result);
         setShowConfirmation(false);
         setInputContent("");
+        incrementCounter(analysisResult.category);
     };
 
     const { textareaRef, handleKeyDown } = useSmartTextarea(inputContent, setInputContent);
