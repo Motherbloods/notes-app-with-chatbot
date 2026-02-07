@@ -1,4 +1,7 @@
-const { createNoteService } = require("../services/notes.service.js");
+const {
+  createNoteService,
+  getCategoriesNotesCountService,
+} = require("../services/notes.service.js");
 
 const createNote = async (req, res) => {
   try {
@@ -13,4 +16,14 @@ const createNote = async (req, res) => {
   }
 };
 
-module.exports = { createNote };
+const getCategoriesNotesCount = async (req, res) => {
+  try {
+    const counts = await getCategoriesNotesCountService();
+    res.status(200).json(counts);
+  } catch (error) {
+    console.error("Error fetching categories notes count:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+module.exports = { createNote, getCategoriesNotesCount };

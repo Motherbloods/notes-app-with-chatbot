@@ -47,4 +47,17 @@ const createNoteService = async (noteData) => {
   }
 };
 
-module.exports = { createNoteService };
+const getCategoriesNotesCountService = async () => {
+  try {
+    const counts = await Note.aggregate([
+      { $group: { _id: "$category", count: { $sum: 1 } } },
+      { $project: { category: "$_id", count: 1, _id: 0 } },
+    ]);
+    return counts;
+  } catch (error) {
+    console.error("Error fetching categories notes count:", error);
+    throw error;
+  }
+};
+
+module.exports = { createNoteService, getCategoriesNotesCountService };
