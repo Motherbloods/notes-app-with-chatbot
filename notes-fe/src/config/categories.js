@@ -1,4 +1,4 @@
-import { Calendar, Code2, FileText, Lightbulb } from "lucide-react";
+import { Calendar, Code2, FileText, Folder, Lightbulb } from "lucide-react";
 
 const categories = {
   target_harian: {
@@ -24,6 +24,12 @@ const categories = {
     label: "Catatan",
     color: "text-purple-500",
     link: "/notes/catatan",
+  },
+  lainnya: {
+    icon: Folder,
+    label: "Lainnya",
+    color: "text-gray-500",
+    link: "/notes/lainnya",
   },
 };
 
