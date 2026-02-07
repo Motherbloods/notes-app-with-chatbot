@@ -1,6 +1,8 @@
 const {
   createNoteService,
   getCategoriesNotesCountService,
+  getNotesByCategoryService,
+  updateNoteService,
 } = require("../services/notes.service.js");
 
 const createNote = async (req, res) => {
@@ -26,4 +28,34 @@ const getCategoriesNotesCount = async (req, res) => {
   }
 };
 
-module.exports = { createNote, getCategoriesNotesCount };
+const getNotesByCategory = async (req, res) => {
+  try {
+    const { categoryKey } = req.params;
+    const notes = await getNotesByCategoryService(categoryKey);
+    res.status(200).json(notes);
+  } catch (error) {
+    console.error("Error fetching notes by category:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const updateNote = async (req, res) => {
+  try {
+    const { noteId } = req.params;
+    const updateData = req.body;
+    const updatedNote = await updateNoteService(noteId, updateData);
+    res.status(200).json({
+      message: "Note updated successfully",
+      note: updatedNote,
+    });
+  } catch (error) {
+    console.error("Error updating note:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+module.exports = {
+  createNote,
+  getCategoriesNotesCount,
+  getNotesByCategory,
+  updateNote,
+};

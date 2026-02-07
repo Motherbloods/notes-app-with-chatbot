@@ -86,7 +86,6 @@ noteSchema.index({ userId: 1, deletedAt: 1 });
 // Pre-find middleware untuk filter soft delete
 noteSchema.pre(/^find/, function (next) {
   this.where({ deletedAt: null });
-  next();
 });
 
 module.exports = mongoose.model("Note", noteSchema);

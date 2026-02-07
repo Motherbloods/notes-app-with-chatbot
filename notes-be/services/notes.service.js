@@ -60,4 +60,34 @@ const getCategoriesNotesCountService = async () => {
   }
 };
 
-module.exports = { createNoteService, getCategoriesNotesCountService };
+const getNotesByCategoryService = async (categoryKey) => {
+  try {
+    const notes = await Note.find({ category: categoryKey }).sort({
+      timestamp: -1,
+    });
+    console.log("Fetched notes:", notes);
+    return notes;
+  } catch (error) {
+    console.error("Error fetching notes by category:", error);
+    throw error;
+  }
+};
+
+const updateNoteService = async (noteId, updateData) => {
+  try {
+    const updatedNote = await Note.findByIdAndUpdate(noteId, updateData, {
+      new: true,
+    });
+    return updatedNote;
+  } catch (error) {
+    console.error("Error updating note:", error);
+    throw error;
+  }
+};
+
+module.exports = {
+  createNoteService,
+  getCategoriesNotesCountService,
+  getNotesByCategoryService,
+  updateNoteService,
+};
