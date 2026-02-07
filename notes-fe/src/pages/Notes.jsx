@@ -2,6 +2,8 @@ import { Loader2, Save } from "lucide-react";
 import { useState } from "react";
 import useSmartTextarea from "../hooks/useSmartTextarea";
 import ModalPreview from "../components/ModalPreview";
+import { analyzingNotes } from "../api/analyzing";
+import { saveNoteData } from "../services/notesService";
 
 function Notes() {
     const [showConfirmation, setShowConfirmation] = useState(false);
@@ -9,21 +11,27 @@ function Notes() {
     const [inputContent, setInputContent] = useState("");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-    const saveNote = () => {
-        console.log("Simpan note:", inputContent, analysisResult);
+    const saveNote = async () => {
+        const result = await saveNoteData(inputContent, analysisResult);
+        console.log("Simpan note:", result);
         setShowConfirmation(false);
+        setInputContent("");
     };
 
     const { textareaRef, handleKeyDown } = useSmartTextarea(inputContent, setInputContent);
 
     const analyzeContent = async (content) => {
         setIsAnalyzing(true);
-        setTimeout(() => {
-            console.log("Analyzed content:", content);
-            setIsAnalyzing(false);
-            setShowConfirmation(true)
-        }, 1000);
-
+        const result = await analyzingNotes({ content });
+        console.log("Hasil analisis:", result);
+        setAnalysisResult({
+            category: result.data?.category || "ide",
+            confidence: result.data?.confidence,
+            errors: result.data?.errors,
+            codeMetadata: result.data?.codeMetadata
+        });
+        setIsAnalyzing(false);
+        setShowConfirmation(true)
     }
     return <div className="flex-1 p-8">
         <h2 className="text-2xl font-bold mb-2 text-gray-800">Paste Anything Here</h2>
@@ -59,7 +67,7 @@ Contoh checklist:
             ) : (
                 <>
                     <Save size={20} />
-                    Simpan & Analisis
+                    Analisis
                 </>
             )}
         </button>
@@ -67,12 +75,16 @@ Contoh checklist:
             isOpen={showConfirmation}
             onClose={() => setShowConfirmation(false)}
             inputContent={inputContent}
-            analysisResult={{
-                ...analysisResult,
-                setCategory: (cat) => setAnalysisResult((prev) => ({ ...prev, category: cat })),
-            }}
+            category={analysisResult.category}
+            confidence={analysisResult.data?.confidence}
+            errors={analysisResult.data?.errors}
+            codeMetadata={analysisResult.codeMetadata}
+            onCategoryChange={(cat) =>
+                setAnalysisResult((prev) => ({ ...prev, category: cat }))
+            }
             onSave={saveNote}
         />
+
     </div>
 }
 
