@@ -2,32 +2,12 @@ const mongoose = require("mongoose");
 
 const noteSchema = new mongoose.Schema(
   {
-    id: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-    },
-
     userId: {
       type: String,
       default: "motherbloodss",
       set: (v) => v || "motherbloodss",
       index: true,
     },
-
-    // status: {
-    //   type: String,
-    //   enum: ["draft", "analyzed", "confirmed"],
-    //   default: "draft",
-    //   index: true,
-    // },
-
-    // analysisStatus: {
-    //   type: String,
-    //   enum: ["pending", "processing", "done", "failed"],
-    //   default: "pending",
-    // },
 
     content: {
       type: String,
@@ -41,17 +21,28 @@ const noteSchema = new mongoose.Schema(
       default: "text",
     },
 
-    language: String,
+    language: {
+      type: String,
+      default: null,
+    },
 
     confidence: {
       type: Number,
       min: 0,
       max: 1,
+      default: 0,
     },
 
     category: {
       type: String,
+      required: true,
       index: true,
+    },
+
+    // For code: store suggested/fixed version
+    suggestedCode: {
+      type: String,
+      default: null,
     },
 
     fileName: String,
@@ -68,10 +59,15 @@ const noteSchema = new mongoose.Schema(
     analysisErrors: [
       {
         line: Number,
-        type: String,
+        type: {
+          type: String,
+          enum: ["error", "warning", "suggestion"],
+        },
         message: String,
+        fix: String, // Suggested fix for this specific error
       },
     ],
+
     deletedAt: {
       type: Date,
       default: null,
@@ -83,6 +79,11 @@ const noteSchema = new mongoose.Schema(
   },
 );
 
+// Compound indexes
+noteSchema.index({ userId: 1, category: 1, createdAt: -1 });
+noteSchema.index({ userId: 1, deletedAt: 1 });
+
+// Pre-find middleware untuk filter soft delete
 noteSchema.pre(/^find/, function (next) {
   this.where({ deletedAt: null });
   next();
