@@ -4,10 +4,17 @@ import { useParams } from "react-router-dom";
 import ArchivedNotice from "../components/Notes/ArchivedNotice";
 import NotesList from "../components/Notes/NotesList";
 import { getNotesByCategory, updateNote } from "../api/notes";
+import { isThisMonth, isThisWeek, isToday } from "../config/date";
 
 function NotesPage() {
     const { categoryKey } = useParams();
     const [notes, setNotes] = useState([]);
+    const [dateFilter, setDateFilter] = useState("all");
+    const [customDate, setCustomDate] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+
+
     const category = categoryKey;
 
     useEffect(() => {
@@ -27,7 +34,34 @@ function NotesPage() {
         return <p>Halaman tidak ditemukan</p>;
     }
 
-    const filteredNotes = notes?.filter(n => n.category === category) || [];
+    const filteredNotes = notes.filter(note => {
+        const noteDate = new Date(note.createdAt);
+
+        if (dateFilter === "today") return isToday(note.createdAt);
+        if (dateFilter === "week") return isThisWeek(note.createdAt);
+        if (dateFilter === "month") return isThisMonth(note.createdAt);
+
+        if (dateFilter === "custom-date" && customDate) {
+            const selected = new Date(customDate);
+            return (
+                noteDate.getDate() === selected.getDate() &&
+                noteDate.getMonth() === selected.getMonth() &&
+                noteDate.getFullYear() === selected.getFullYear()
+            );
+        }
+
+        if (dateFilter === "range" && startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999); // supaya include full hari
+
+            return noteDate >= start && noteDate <= end;
+        }
+
+        return true;
+    });
+
+
     const archivedNotes = filteredNotes.filter(n => n.archived);
 
     const toggleChecklistItem = async (noteId, checklistIndex) => {
@@ -70,16 +104,66 @@ function NotesPage() {
     };
 
     return (
-        <div>
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                {React.createElement(categories[category].icon, { size: 28, className: categories[category].color })}
-                {categories[category].label}
-            </h2>
+        <>
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    {React.createElement(categories[category].icon, {
+                        size: 28,
+                        className: categories[category].color
+                    })}
+                    {categories[category].label}
+                </h2>
+
+                <div className="flex items-center gap-2">
+                    <select
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    >
+                        <option value="all">Semua</option>
+                        <option value="today">Hari Ini</option>
+                        <option value="week">Minggu Ini</option>
+                        <option value="month">Bulan Ini</option>
+                        <option value="custom-date">Pilih Tanggal</option>
+                        <option value="range">Custom Range</option>
+                    </select>
+
+                    {dateFilter === "custom-date" && (
+                        <input
+                            type="date"
+                            value={customDate}
+                            onChange={(e) => setCustomDate(e.target.value)}
+                            className="border rounded-lg px-3 py-2 text-sm"
+                        />
+                    )}
+
+                    {dateFilter === "range" && (
+                        <>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="border rounded-lg px-3 py-2 text-sm"
+                            />
+                            <span>-</span>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="border rounded-lg px-3 py-2 text-sm"
+                            />
+                        </>
+                    )}
+                </div>
+            </div>
+
+
 
             <ArchivedNotice notes={archivedNotes} />
 
             <NotesList notes={filteredNotes} toggleChecklistItem={toggleChecklistItem} />
-        </div>
+
+        </>
     );
 }
 
