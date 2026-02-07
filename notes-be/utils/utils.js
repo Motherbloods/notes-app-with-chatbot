@@ -16,8 +16,8 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api/analyzing", analyzingRoutes);
-app.use("/api/notes", notesRoutes);
-// app.use("/api/chat", chatRoutes);
+app.use("/api", analyzingRoutes);
+app.use("/api", notesRoutes);
+// app.use("/api", chatRoutes);
 
 module.exports = app;
