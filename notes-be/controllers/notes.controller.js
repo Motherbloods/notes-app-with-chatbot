@@ -1,9 +1,8 @@
-const Note = require("../models/nptes.js");
 const { createNoteService } = require("../services/notes.service.js");
 
 const createNote = async (req, res) => {
   try {
-    const newNote = createNoteService(req.body);
+    const newNote = await createNoteService(req.body);
     res.status(201).json({
       message: "Note created successfully",
       note: newNote,
