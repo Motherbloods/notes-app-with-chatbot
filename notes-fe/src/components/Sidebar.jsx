@@ -6,7 +6,7 @@ import {
 import { NavLink } from "react-router-dom";
 import categories from "../config/categories";
 
-function Sidebar({ notes, search, onSearchChange }) {
+function Sidebar({ notesCount, search, onSearchChange }) {
 
     return (
         <div className="w-64 bg-white border-r border-gray-200 p-4">
@@ -33,7 +33,7 @@ function Sidebar({ notes, search, onSearchChange }) {
 
             <div className="space-y-1">
                 {Object.entries(categories).map(([key, { icon: Icon, label, color, link }]) => {
-                    const count = notes.filter(n => n.category === key).length;
+                    const count = notesCount.filter(n => n.category === key).length;
 
                     return (
                         <NavLink

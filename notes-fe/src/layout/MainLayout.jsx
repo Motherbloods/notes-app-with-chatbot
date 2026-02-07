@@ -5,13 +5,13 @@ import { getCategoriesNotesCount } from "../api/notes";
 
 function MainLayout() {
     const [search, setSearch] = useState("");
-    const [notes, setNotes] = useState([]);
+    const [notesCount, setNotesCount] = useState([]);
 
     useEffect(() => {
         const fetchCounter = async () => {
             try {
                 const data = await getCategoriesNotesCount();
-                setNotes(data);
+                setNotesCount(data);
             } catch (error) {
                 console.error("Error fetching notes:", error);
             }
@@ -20,7 +20,7 @@ function MainLayout() {
     }, []);
 
     return (<div className="flex h-screen overflow-hidden">
-        <Sidebar notes={notes} search={search} onSearchChange={setSearch} />
+        <Sidebar notesCount={notesCount} search={search} onSearchChange={setSearch} />
         <div className="flex-1 p-4 overflow-hidden">
             <Outlet />
         </div>
