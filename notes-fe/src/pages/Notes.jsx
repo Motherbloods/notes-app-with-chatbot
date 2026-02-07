@@ -10,22 +10,45 @@ function Notes() {
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [analysisResult, setAnalysisResult] = useState({ category: "ide" });
     const [inputContent, setInputContent] = useState("");
+    const [cleanedContent, setCleanedContent] = useState("");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const { incrementCounter } = useNotes();
 
     const saveNote = async () => {
-        const result = await saveNoteData(inputContent, analysisResult);
+        const result = await saveNoteData(cleanedContent, analysisResult);
         console.log("Simpan note:", result);
         setShowConfirmation(false);
         setInputContent("");
+        setCleanedContent("");
         incrementCounter(analysisResult.category);
     };
 
     const { textareaRef, handleKeyDown } = useSmartTextarea(inputContent, setInputContent);
 
+    const cleanEmptyListItems = (content) => {
+        return content
+            .split('\n')
+            .filter(line => {
+                if (/^\d+\.\s*$/.test(line.trim())) {
+                    return false;
+                }
+                if (/^[-•*]\s*$/.test(line.trim())) {
+                    return false;
+                }
+                if (/^[-•*]?\s*\[([ x])\]\s*$/.test(line.trim())) {
+                    return false;
+                }
+                return true;
+            })
+            .join('\n')
+            .trim();
+    };
+
     const analyzeContent = async (content) => {
         setIsAnalyzing(true);
-        const result = await analyzingNotes({ content });
+        const cleaned = cleanEmptyListItems(content);
+        setCleanedContent(cleaned);
+        const result = await analyzingNotes({ content: cleaned });
         console.log("Hasil analisis:", result);
         setAnalysisResult({
             category: result.data?.category || "ide",
@@ -36,6 +59,7 @@ function Notes() {
         setIsAnalyzing(false);
         setShowConfirmation(true)
     }
+
     return <div className="flex-1 p-8">
         <h2 className="text-2xl font-bold mb-2 text-gray-800">Paste Anything Here</h2>
         <p className="text-sm text-gray-500 mb-4">
@@ -77,7 +101,7 @@ Contoh checklist:
         <ModalPreview
             isOpen={showConfirmation}
             onClose={() => setShowConfirmation(false)}
-            inputContent={inputContent}
+            inputContent={cleanedContent}
             category={analysisResult.category}
             confidence={analysisResult.data?.confidence}
             errors={analysisResult.data?.errors}
