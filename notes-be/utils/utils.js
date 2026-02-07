@@ -1,7 +1,8 @@
 const express = require("express");
-const analyzingRoutes = require("./routes/analyzing.route");
-const notesRoutes = require("./routes/notes.route");
-const chatRoutes = require("./routes/chatbot.route");
+const analyzingRoutes = require("../routes/analyzing.route");
+const notesRoutes = require("../routes/notes.route");
+const chatRoutes = require("../routes/chatbot.route");
+const cors = require("cors");
 const app = express();
 
 app.use(
@@ -17,6 +18,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/analyzing", analyzingRoutes);
 app.use("/api/notes", notesRoutes);
-app.use("/api/chat", chatRoutes);
+// app.use("/api/chat", chatRoutes);
 
 module.exports = app;
