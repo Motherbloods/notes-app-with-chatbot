@@ -1,14 +1,11 @@
 import React from "react";
 import { CheckSquare, Square } from "lucide-react";
+import CodeWithTabs from "./CodeWithTabs";
 
 function renderFormattedContent(note, toggleChecklistItem) {
   // Code display
   if (note.category === "kode") {
-    return (
-      <pre className="bg-gray-900 text-gray-100 p-3 rounded text-xs overflow-auto max-h-64 font-mono leading-relaxed">
-        {note.codeMetadata?.formatted || note.content}
-      </pre>
-    );
+    return <CodeWithTabs note={note} />;
   }
 
   const lines = note.content.split("\n");
