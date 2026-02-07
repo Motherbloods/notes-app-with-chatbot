@@ -7,7 +7,7 @@ export default function NotesList({ notes, toggleChecklistItem }) {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[90vh] overflow-y-auto pr-2">
             {notes.map(note => (
                 <NoteCard key={note.id} note={note} toggleChecklistItem={toggleChecklistItem} />
             ))}
