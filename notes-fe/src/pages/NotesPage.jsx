@@ -3,8 +3,9 @@ import categories from "../config/categories";
 import { useParams } from "react-router-dom";
 import ArchivedNotice from "../components/Notes/ArchivedNotice";
 import NotesList from "../components/Notes/NotesList";
-import { getNotesByCategory, updateNote } from "../api/notes";
+import { deleteNoteById, getNotesByCategory, updateNote } from "../api/notes";
 import { isThisMonth, isThisWeek, isToday } from "../config/date";
+import ConfirmModal from "../components/ConfirmModal";
 
 function NotesPage() {
     const { categoryKey } = useParams();
@@ -13,7 +14,7 @@ function NotesPage() {
     const [customDate, setCustomDate] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
-
+    const [noteToDelete, setNoteToDelete] = useState(null);
 
     const category = categoryKey;
 
@@ -103,6 +104,16 @@ function NotesPage() {
         }
     };
 
+    const handleConfirmDelete = async () => {
+        try {
+            await deleteNoteById(noteToDelete);
+            setNotes(prevNotes => prevNotes.filter(n => n._id !== noteToDelete));
+            setNoteToDelete(null);
+        } catch (error) {
+            console.error("Error deleting note:", error);
+        }
+    }
+
     return (
         <>
             <div className="flex items-center justify-between mb-6">
@@ -161,7 +172,14 @@ function NotesPage() {
 
             <ArchivedNotice notes={archivedNotes} />
 
-            <NotesList notes={filteredNotes} toggleChecklistItem={toggleChecklistItem} />
+            <NotesList notes={filteredNotes} toggleChecklistItem={toggleChecklistItem} onDelete={setNoteToDelete} />
+            {noteToDelete && (
+                <ConfirmModal
+                    message="Yakin mau hapus catatan ini?"
+                    onCancel={() => setNoteToDelete(null)}
+                    onConfirm={handleConfirmDelete}
+                />
+            )}
 
         </>
     );

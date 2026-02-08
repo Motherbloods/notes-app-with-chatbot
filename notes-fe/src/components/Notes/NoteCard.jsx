@@ -1,16 +1,24 @@
 import React from "react";
-import { Code2, AlertTriangle } from "lucide-react";
+import { Code2, AlertTriangle, Trash2 } from "lucide-react";
 import renderFormattedContent from "./renderFormattedContent";
 
-export default function NoteCard({ note, toggleChecklistItem }) {
-    console.log("NoteCard note:", note);
+export default function NoteCard({ note, toggleChecklistItem, onDelete }) {
     return (
         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="flex justify-between items-start mb-3">
                 <span className="text-xs text-gray-500">
-                    {new Date(note.createdAt).toLocaleString('id-ID')}
+                    {new Date(note.createdAt).toLocaleString("id-ID")}
                 </span>
+
+                <button
+                    onClick={() => onDelete(note._id)}
+                    className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                    title="Hapus catatan"
+                >
+                    <Trash2 size={16} />
+                </button>
             </div>
+
 
             {note.category == "kode" && (
                 <div className="mb-2">
