@@ -84,9 +84,21 @@ const updateNoteService = async (noteId, updateData) => {
   }
 };
 
+const deleteNoteByIdService = async (noteId) => {
+  try {
+    await Note.findByIdAndUpdate(noteId, {
+      deletedAt: new Date(),
+    });
+  } catch (error) {
+    console.error("Error soft deleting note:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   createNoteService,
   getCategoriesNotesCountService,
   getNotesByCategoryService,
   updateNoteService,
+  deleteNoteByIdService,
 };

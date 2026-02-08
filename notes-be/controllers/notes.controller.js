@@ -3,6 +3,7 @@ const {
   getCategoriesNotesCountService,
   getNotesByCategoryService,
   updateNoteService,
+  deleteNoteByIdService,
 } = require("../services/notes.service.js");
 
 const createNote = async (req, res) => {
@@ -53,9 +54,22 @@ const updateNote = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+const deleteNoteById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await deleteNoteByIdService(id);
+    res.status(200).json({ message: "Note deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting note:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   createNote,
   getCategoriesNotesCount,
   getNotesByCategory,
   updateNote,
+  deleteNoteById,
 };
