@@ -42,9 +42,9 @@ const getNotesByCategory = async (req, res) => {
 
 const updateNote = async (req, res) => {
   try {
-    const { noteId } = req.params;
+    const { id } = req.params;
     const updateData = req.body;
-    const updatedNote = await updateNoteService(noteId, updateData);
+    const updatedNote = await updateNoteService(id, updateData);
     res.status(200).json({
       message: "Note updated successfully",
       note: updatedNote,
