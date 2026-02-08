@@ -1,5 +1,6 @@
 import { React, useState } from "react";
-import { X, Check, AlertTriangle, CheckCircle2, Code2, RefreshCw } from "lucide-react";
+import { X, Check, AlertTriangle, CheckCircle2, Code2, RefreshCw, Loader2 } from "lucide-react";
+import useSmartTextarea from "../hooks/useSmartTextarea"; // Sesuaikan path
 
 function EditModal({ onClose, onSave, initialData }) {
     const defaultData = initialData || {};
@@ -8,11 +9,38 @@ function EditModal({ onClose, onSave, initialData }) {
     const [inputContent, setInputContent] = useState(defaultData.content || "");
     const [showSuggested, setShowSuggested] = useState(false);
     const [reanalyze, setReanalyze] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const { textareaRef, handleKeyDown } = useSmartTextarea(inputContent, setInputContent);
 
     if (!initialData) return null;
 
     const isCode = defaultData.contentType === "code";
     const categoryChanged = category !== defaultData.category;
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const updatedNote = {
+                _id: initialData._id,
+                category,
+                content: inputContent,
+                contentType: initialData.contentType,
+                ...(isCode && !reanalyze && !categoryChanged && {
+                    language: initialData.language,
+                    suggestedCode: initialData.suggestedCode,
+                    analysisErrors: initialData.analysisErrors,
+                    confidence: initialData.confidence,
+                }),
+                reanalyze: reanalyze || categoryChanged,
+            };
+            await onSave(updatedNote);
+        } catch (error) {
+            console.error("Error saving note:", error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
@@ -23,7 +51,11 @@ function EditModal({ onClose, onSave, initialData }) {
                         <h3 className="text-xl font-bold text-gray-800">Edit Catatan</h3>
                         <p className="text-sm text-gray-500 mt-1">Periksa dan sesuaikan sebelum menyimpan</p>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                        disabled={isSaving}
+                    >
                         <X size={24} />
                     </button>
                 </div>
@@ -35,7 +67,8 @@ function EditModal({ onClose, onSave, initialData }) {
                             <select
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                disabled={isSaving}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <option value="target_harian">📅 Target Harian</option>
                                 <option value="ide">💡 Ide</option>
@@ -57,7 +90,8 @@ function EditModal({ onClose, onSave, initialData }) {
                                 id="reanalyze"
                                 checked={reanalyze}
                                 onChange={(e) => setReanalyze(e.target.checked)}
-                                className="w-4 h-4 text-blue-600 rounded"
+                                disabled={isSaving}
+                                className="w-4 h-4 text-blue-600 rounded disabled:opacity-50"
                             />
                             <label htmlFor="reanalyze" className="text-sm text-blue-800 flex items-center gap-2 cursor-pointer">
                                 <RefreshCw size={14} />
@@ -121,7 +155,8 @@ function EditModal({ onClose, onSave, initialData }) {
                                 <div className="flex gap-2 border-b border-gray-200">
                                     <button
                                         onClick={() => setShowSuggested(false)}
-                                        className={`px-4 py-2 text-sm font-medium transition-colors ${!showSuggested
+                                        disabled={isSaving}
+                                        className={`px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${!showSuggested
                                             ? 'text-blue-600 border-b-2 border-blue-600'
                                             : 'text-gray-500 hover:text-gray-700'
                                             }`}
@@ -133,7 +168,8 @@ function EditModal({ onClose, onSave, initialData }) {
                                     </button>
                                     <button
                                         onClick={() => setShowSuggested(true)}
-                                        className={`px-4 py-2 text-sm font-medium transition-colors ${showSuggested
+                                        disabled={isSaving}
+                                        className={`px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${showSuggested
                                             ? 'text-green-600 border-b-2 border-green-600'
                                             : 'text-gray-500 hover:text-gray-700'
                                             }`}
@@ -151,11 +187,14 @@ function EditModal({ onClose, onSave, initialData }) {
                                     {showSuggested ? '✅ Suggested Code:' : 'Preview:'}
                                 </label>
                                 <textarea
+                                    ref={showSuggested ? null : textareaRef}
                                     value={showSuggested ? initialData.suggestedCode : inputContent}
                                     onChange={showSuggested ? undefined : (e) => setInputContent(e.target.value)}
-                                    readOnly={showSuggested}
+                                    onKeyDown={showSuggested ? undefined : handleKeyDown}
+                                    readOnly={showSuggested || isSaving}
+                                    disabled={isSaving}
                                     className={`w-full p-4 border border-gray-300 rounded-lg text-sm text-gray-700 max-h-96 overflow-auto font-mono resize-none 
-            ${showSuggested ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-text'}`}
+            ${showSuggested || isSaving ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-text'}`}
                                     rows={12}
                                 />
                             </div>
@@ -165,9 +204,12 @@ function EditModal({ onClose, onSave, initialData }) {
                         <div>
                             <label className="text-sm font-semibold text-gray-700 mb-2 block">Preview:</label>
                             <textarea
+                                ref={textareaRef}
                                 value={inputContent}
                                 onChange={(e) => setInputContent(e.target.value)}
-                                className="w-full p-4 border border-gray-300 rounded-lg text-sm text-gray-700 max-h-64 overflow-auto resize-none"
+                                onKeyDown={handleKeyDown}
+                                disabled={isSaving}
+                                className="w-full p-4 border border-gray-300 rounded-lg text-sm text-gray-700 max-h-64 overflow-auto resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                                 rows={8}
                             />
                         </div>
@@ -177,31 +219,27 @@ function EditModal({ onClose, onSave, initialData }) {
                 <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        disabled={isSaving}
+                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Batalkan
                     </button>
                     <button
-                        onClick={() => {
-                            const updatedNote = {
-                                _id: initialData._id,
-                                category,
-                                content: inputContent,
-                                contentType: initialData.contentType,
-                                ...(isCode && !reanalyze && !categoryChanged && {
-                                    language: initialData.language,
-                                    suggestedCode: initialData.suggestedCode,
-                                    analysisErrors: initialData.analysisErrors,
-                                    confidence: initialData.confidence,
-                                }),
-                                reanalyze: reanalyze || categoryChanged,
-                            };
-                            onSave(updatedNote);
-                        }}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                        <Check size={18} />
-                        Simpan
+                        {isSaving ? (
+                            <>
+                                <Loader2 size={18} className="animate-spin" />
+                                Menyimpan...
+                            </>
+                        ) : (
+                            <>
+                                <Check size={18} />
+                                Simpan
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
