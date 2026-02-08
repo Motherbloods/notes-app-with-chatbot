@@ -12,7 +12,7 @@ router.post("/notes", createNote);
 router.get("/notes/count", getCategoriesNotesCount);
 // router.get("/notes/:id", getNoteById);
 router.get("/notes/category/:categoryKey", getNotesByCategory);
-router.put("/notes/:id", updateNote);
+router.patch("/notes/:id", updateNote);
 // router.delete("/notes/:id", deleteNoteById);
 
 module.exports = router;
