@@ -6,6 +6,7 @@ import NotesList from "../components/Notes/NotesList";
 import { deleteNoteById, getNotesByCategory, updateNote } from "../api/notes";
 import { isThisMonth, isThisWeek, isToday } from "../config/date";
 import ConfirmModal from "../components/ConfirmModal";
+import EditModal from "../components/EditModal";
 
 function NotesPage() {
     const { categoryKey } = useParams();
@@ -15,7 +16,7 @@ function NotesPage() {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [noteToDelete, setNoteToDelete] = useState(null);
-
+    const [selectedNote, setSelectedNote] = useState(null);
     const category = categoryKey;
 
     useEffect(() => {
@@ -74,13 +75,13 @@ function NotesPage() {
             let currentChecklistIndex = 0;
 
             const updatedLines = lines.map(line => {
-                const checklistMatch = line.match(/^([-•*]?\s*)\[([ xX])\]\s*(.+)$/);
+                const checklistMatch = line.match(/^([-•*â€¢]?\s*)\[([ xX])\]\s*(.+)$/);
 
                 if (checklistMatch) {
                     if (currentChecklistIndex === checklistIndex) {
                         const newCheckState = checklistMatch[2].toLowerCase() === 'x' ? ' ' : 'x';
                         currentChecklistIndex++;
-                        return `${checklistMatch[1]}[${newCheckState}] ${checklistMatch[3]}`;
+                        return `- [${newCheckState}] ${checklistMatch[3]}`;
                     }
                     currentChecklistIndex++;
                 }
@@ -89,7 +90,10 @@ function NotesPage() {
 
             const updatedContent = updatedLines.join('\n');
 
-            await updateNote(noteId, { content: updatedContent });
+            await updateNote(noteId, {
+                content: updatedContent,
+                reanalyze: false
+            });
 
             setNotes(prevNotes =>
                 prevNotes.map(n =>
@@ -111,6 +115,23 @@ function NotesPage() {
             setNoteToDelete(null);
         } catch (error) {
             console.error("Error deleting note:", error);
+        }
+    }
+
+    const handleEditNote = async (updatedNote) => {
+        try {
+            const savedNote = await updateNote(updatedNote._id, updatedNote);
+
+            setNotes(prevNotes =>
+                prevNotes.map(n =>
+                    (n._id === updatedNote._id)
+                        ? { ...n, ...savedNote }
+                        : n
+                )
+            );
+            setSelectedNote(null);
+        } catch (error) {
+            console.error("Error updating note:", error);
         }
     }
 
@@ -172,12 +193,20 @@ function NotesPage() {
 
             <ArchivedNotice notes={archivedNotes} />
 
-            <NotesList notes={filteredNotes} toggleChecklistItem={toggleChecklistItem} onDelete={setNoteToDelete} />
+            <NotesList notes={filteredNotes} toggleChecklistItem={toggleChecklistItem} onDelete={setNoteToDelete} onSelectNote={setSelectedNote} />
             {noteToDelete && (
                 <ConfirmModal
                     message="Yakin mau hapus catatan ini?"
                     onCancel={() => setNoteToDelete(null)}
                     onConfirm={handleConfirmDelete}
+                />
+            )}
+
+            {selectedNote && (
+                <EditModal
+                    onClose={() => { setSelectedNote(null) }}
+                    onSave={handleEditNote}
+                    initialData={selectedNote}
                 />
             )}
 
