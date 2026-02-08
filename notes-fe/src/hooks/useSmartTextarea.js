@@ -52,7 +52,49 @@ function useSmartTextarea(inputContent, setInputContent) {
         return;
       }
 
-      // Check for bullet list (-, •)
+      const checklistMatch = currentLine.match(
+        /^\s*([-•*])?\s*\[([ xX]?)\]\s*(.*)$/,
+      );
+
+      if (checklistMatch) {
+        const checked = checklistMatch[2] || " ";
+        const restText = checklistMatch[3];
+
+        e.preventDefault();
+
+        const textBeforeLine = textBeforeCursor.slice(
+          0,
+          textBeforeCursor.length - currentLine.length,
+        );
+
+        if (restText.trim() === "") {
+          const newText = textBeforeLine + "\n" + textAfterCursor;
+
+          setInputContent(newText);
+
+          setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd =
+              textBeforeLine.length + 1;
+          }, 0);
+
+          return;
+        }
+
+        const normalizedCurrentLine = `- [${checked}] ${restText}`;
+
+        const newText =
+          textBeforeLine + normalizedCurrentLine + "\n" + textAfterCursor;
+
+        setInputContent(newText);
+
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd =
+            textBeforeLine.length + normalizedCurrentLine.length + 1 + 6; // panjang "- [ ] "
+        }, 0);
+
+        return;
+      }
+
       const bulletMatch = currentLine.match(/^([-•*])\s*(.*)$/);
 
       if (bulletMatch) {
@@ -77,55 +119,6 @@ function useSmartTextarea(inputContent, setInputContent) {
         setTimeout(() => {
           textarea.selectionStart = textarea.selectionEnd =
             textBeforeLine.length + normalizedCurrentLine.length + 1 + 2;
-        }, 0);
-
-        return;
-      }
-
-      // Check for checklist ([ ] or [x])
-      const checklistMatch = currentLine.match(
-        /^([-•*])?\s*\[([ xX])\]\s*(.*)$/,
-      );
-
-      if (checklistMatch) {
-        const checked = checklistMatch[2]; // " " atau "x"
-        const restText = checklistMatch[3];
-
-        e.preventDefault();
-
-        // exit checklist kalau kosong
-        if (restText.trim() === "") {
-          const newText =
-            textBeforeCursor.slice(0, -currentLine.length) +
-            "\n" +
-            textAfterCursor;
-
-          setInputContent(newText);
-
-          setTimeout(() => {
-            textarea.selectionStart = textarea.selectionEnd =
-              cursorPos - currentLine.length + 1;
-          }, 0);
-
-          return;
-        }
-
-        // normalize current line
-        const normalizedCurrentLine = `- [${checked}] ${restText}`;
-
-        const textBeforeLine = textBeforeCursor.slice(
-          0,
-          textBeforeCursor.length - currentLine.length,
-        );
-
-        const newText =
-          textBeforeLine + normalizedCurrentLine + "\n- [ ] " + textAfterCursor;
-
-        setInputContent(newText);
-
-        setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd =
-            textBeforeLine.length + normalizedCurrentLine.length + 1 + 6;
         }, 0);
 
         return;
