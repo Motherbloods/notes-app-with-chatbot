@@ -7,8 +7,10 @@ import { deleteNoteById, getNotesByCategory, updateNote } from "../api/notes";
 import { isThisMonth, isThisWeek, isToday } from "../config/date";
 import ConfirmModal from "../components/ConfirmModal";
 import EditModal from "../components/EditModal";
+import { useNotes } from "../context/NotesContext";
 
 function NotesPage() {
+    const { decrementCounter, incrementCounter } = useNotes();
     const { categoryKey } = useParams();
     const [notes, setNotes] = useState([]);
     const [dateFilter, setDateFilter] = useState("all");
@@ -120,15 +122,27 @@ function NotesPage() {
 
     const handleEditNote = async (updatedNote) => {
         try {
-            const savedNote = await updateNote(updatedNote._id, updatedNote);
+            const response = await updateNote(updatedNote._id, updatedNote);
+            const savedNote = response.note;
 
-            setNotes(prevNotes =>
-                prevNotes.map(n =>
-                    (n._id === updatedNote._id)
-                        ? { ...n, ...savedNote }
-                        : n
-                )
-            );
+            if (savedNote.category !== category) {
+                setNotes(prevNotes =>
+                    prevNotes.filter(n => n._id !== updatedNote._id)
+                );
+
+                // Update counter
+                decrementCounter(category);
+                incrementCounter(savedNote.category);
+            } else {
+                setNotes(prevNotes =>
+                    prevNotes.map(n =>
+                        n._id === updatedNote._id
+                            ? { ...n, ...savedNote }
+                            : n
+                    )
+                );
+            }
+
             setSelectedNote(null);
         } catch (error) {
             console.error("Error updating note:", error);
