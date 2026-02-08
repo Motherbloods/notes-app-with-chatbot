@@ -65,7 +65,6 @@ const getNotesByCategoryService = async (categoryKey) => {
     const notes = await Note.find({ category: categoryKey }).sort({
       timestamp: -1,
     });
-    console.log("Fetched notes:", notes);
     return notes;
   } catch (error) {
     console.error("Error fetching notes by category:", error);

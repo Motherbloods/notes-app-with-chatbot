@@ -66,14 +66,14 @@ function NotesPage() {
 
     const toggleChecklistItem = async (noteId, checklistIndex) => {
         try {
-            const note = notes.find(n => n._id === noteId || n.id === noteId);
+            const note = notes.find(n => n._id === noteId);
             if (!note) return;
 
             const lines = note.content.split('\n');
             let currentChecklistIndex = 0;
 
             const updatedLines = lines.map(line => {
-                const checklistMatch = line.match(/^([-•]?\s*)\[([ xX])\]\s*(.+)$/);
+                const checklistMatch = line.match(/^([-•*]?\s*)\[([ xX])\]\s*(.+)$/);
 
                 if (checklistMatch) {
                     if (currentChecklistIndex === checklistIndex) {
@@ -92,7 +92,7 @@ function NotesPage() {
 
             setNotes(prevNotes =>
                 prevNotes.map(n =>
-                    (n._id === noteId || n.id === noteId)
+                    (n._id === noteId)
                         ? { ...n, content: updatedContent }
                         : n
                 )

@@ -50,7 +50,7 @@ function renderFormattedContent(note, toggleChecklistItem) {
 
   lines.forEach((line, lineIndex) => {
     // Checklist pattern: - [ ] or - [x] or • [ ] etc.
-    const checklistMatch = line.match(/^([-•]?\s*)\[([ xX])\]\s*(.+)$/);
+    const checklistMatch = line.match(/^([-•*]?\s*)\[([ xX])\]\s*(.+)$/);
 
     if (checklistMatch) {
       flushList();
@@ -63,7 +63,7 @@ function renderFormattedContent(note, toggleChecklistItem) {
       elements.push(
         <div key={`checklist-${lineIndex}`} className="flex items-start gap-2 my-1">
           <button
-            onClick={() => toggleChecklistItem(note._id || note.id, currentChecklistIndex)}
+            onClick={() => toggleChecklistItem(note._id, currentChecklistIndex)}
             className="mt-0.5 shrink-0 hover:opacity-70 transition-opacity"
             aria-label={isChecked ? "Uncheck item" : "Check item"}
           >
@@ -95,7 +95,7 @@ function renderFormattedContent(note, toggleChecklistItem) {
     }
 
     // Bullet list pattern: - Item or • Item
-    const bulletMatch = line.match(/^[-•]\s+(.+)$/);
+    const bulletMatch = line.match(/^[-•*]\s+(.+)$/);
     if (bulletMatch) {
       if (currentListType !== "bullet") {
         flushList();

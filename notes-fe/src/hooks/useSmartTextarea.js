@@ -84,7 +84,7 @@ function useSmartTextarea(inputContent, setInputContent) {
 
       // Check for checklist ([ ] or [x])
       const checklistMatch = currentLine.match(
-        /^([-•*])?\s*\[([ x])\]\s*(.*)$/,
+        /^([-•*])?\s*\[([ xX])\]\s*(.*)$/,
       );
 
       if (checklistMatch) {
