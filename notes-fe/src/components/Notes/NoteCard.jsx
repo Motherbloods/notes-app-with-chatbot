@@ -2,16 +2,21 @@ import React from "react";
 import { Code2, AlertTriangle, Trash2 } from "lucide-react";
 import renderFormattedContent from "./renderFormattedContent";
 
-export default function NoteCard({ note, toggleChecklistItem, onDelete }) {
+export default function NoteCard({ note, toggleChecklistItem, onDelete, onSelectNote }) {
     return (
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+        <div
+            className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm
+             hover:shadow-lg hover:-translate-y-1 transition transform duration-200 cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); onSelectNote(note) }}
+        >
+
             <div className="flex justify-between items-start mb-3">
                 <span className="text-xs text-gray-500">
                     {new Date(note.createdAt).toLocaleString("id-ID")}
                 </span>
 
                 <button
-                    onClick={() => onDelete(note._id)}
+                    onClick={(e) => { e.stopPropagation(); onDelete(note._id) }}
                     className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
                     title="Hapus catatan"
                 >

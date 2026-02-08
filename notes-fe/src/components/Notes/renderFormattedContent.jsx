@@ -63,7 +63,7 @@ function renderFormattedContent(note, toggleChecklistItem) {
       elements.push(
         <div key={`checklist-${lineIndex}`} className="flex items-start gap-2 my-1">
           <button
-            onClick={() => toggleChecklistItem(note._id, currentChecklistIndex)}
+            onClick={(e) => { e.stopPropagation(); toggleChecklistItem(note._id, currentChecklistIndex) }}
             className="mt-0.5 shrink-0 hover:opacity-70 transition-opacity"
             aria-label={isChecked ? "Uncheck item" : "Check item"}
           >

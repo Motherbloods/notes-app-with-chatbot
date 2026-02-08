@@ -10,7 +10,7 @@ function CodeWithTabs({ note }) {
         <div className="space-y-2">
             <div className="flex border-b border-gray-300 mb-2">
                 <button
-                    onClick={() => setActiveTab("suggested")}
+                    onClick={(e) => { e.stopPropagation(); setActiveTab("suggested") }}
                     className={`px-4 py-2 font-medium ${activeTab === "suggested"
                         ? "border-b-2 border-blue-600 text-blue-600"
                         : "text-gray-600 hover:text-gray-900"
@@ -19,7 +19,7 @@ function CodeWithTabs({ note }) {
                     Suggested Code
                 </button>
                 <button
-                    onClick={() => setActiveTab("original")}
+                    onClick={(e) => { e.stopPropagation(); setActiveTab("original") }}
                     className={`px-4 py-2 font-medium ${activeTab === "original"
                         ? "border-b-2 border-blue-600 text-blue-600"
                         : "text-gray-600 hover:text-gray-900"
