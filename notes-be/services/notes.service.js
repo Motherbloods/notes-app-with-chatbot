@@ -1,4 +1,5 @@
 const Note = require("../models/notes.js");
+const { analyzingNotesWithLLM } = require("./analyzing.service.js");
 
 const createNoteService = async (noteData) => {
   try {
@@ -74,7 +75,33 @@ const getNotesByCategoryService = async (categoryKey) => {
 
 const updateNoteService = async (noteId, updateData) => {
   try {
-    const updatedNote = await Note.findByIdAndUpdate(noteId, updateData, {
+    const shouldReanalyze = updateData.reanalyze === true;
+
+    let updatedFields = { ...updateData };
+
+    delete updatedFields.reanalyze;
+
+    if (shouldReanalyze) {
+      const analyzing = await analyzingNotesWithLLM(updateData.content);
+      const contentType = analyzing?.category === "kode" ? "code" : "text";
+
+      updatedFields = {
+        ...updatedFields,
+        contentType,
+      };
+
+      if (contentType === "code" && analyzing.codeMetadata != null) {
+        updatedFields = {
+          ...updatedFields,
+          language: analyzing.codeMetadata?.language || "N/A",
+          suggestedCode: analyzing.codeMetadata?.suggested || "",
+          analysisErrors: analyzing.codeMetadata?.errors || [],
+          confidence: analyzing.confidence || 0,
+        };
+      }
+    }
+
+    const updatedNote = await Note.findByIdAndUpdate(noteId, updatedFields, {
       new: true,
     });
     return updatedNote;
