@@ -15,6 +15,16 @@ const noteSchema = new mongoose.Schema(
       trim: true,
     },
 
+    originalContent: {
+      type: String,
+      default: null,
+    },
+
+    wasReformatted: {
+      type: Boolean,
+      default: false,
+    },
+
     contentType: {
       type: String,
       enum: ["text", "code", "file"],
@@ -65,6 +75,18 @@ const noteSchema = new mongoose.Schema(
         },
         message: String,
         fix: String, // Suggested fix for this specific error
+      },
+    ],
+
+    lineFormats: [
+      {
+        originalLine: String,
+        suggestedFormat: {
+          type: String,
+          enum: ["checklist", "numbered", "bullet", "keep"],
+        },
+        convertedLine: String,
+        reason: String,
       },
     ],
 
