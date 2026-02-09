@@ -26,24 +26,34 @@ function Notes() {
     const { textareaRef, handleKeyDown } = useSmartTextarea(inputContent, setInputContent);
 
     const cleanEmptyListItems = (content) => {
-        return content
-            .split('\n')
+        const lines = content.split('\n');
+        let numberedListCounter = 0;
+        let inNumberedList = false;
+
+        return lines
             .filter(line => {
-                if (/^\d+\.\s*$/.test(line.trim())) {
-                    return false;
-                }
-                if (/^[-•*]\s*$/.test(line.trim())) {
-                    return false;
-                }
-                if (/^[-•*]?\s*\[([ x])\]\s*$/.test(line.trim())) {
-                    return false;
-                }
+                if (/^\d+\.\s*$/.test(line.trim())) return false;
+                if (/^[-•*]\s*$/.test(line.trim())) return false;
+                if (/^[-•*]?\s*\[([ x])\]\s*$/.test(line.trim())) return false;
                 return true;
+            })
+            .map(line => {
+                const numberedMatch = line.match(/^(\d+)\.\s+(.+)$/);
+                if (numberedMatch) {
+                    inNumberedList = true;
+                    numberedListCounter++;
+                    return `${numberedListCounter}. ${numberedMatch[2]}`;
+                } else {
+                    if (inNumberedList && line.trim() !== '') {
+                        inNumberedList = false;
+                        numberedListCounter = 0;
+                    }
+                    return line;
+                }
             })
             .join('\n')
             .trim();
     };
-
     const analyzeContent = async (content) => {
         setIsAnalyzing(true);
         const cleaned = cleanEmptyListItems(content);

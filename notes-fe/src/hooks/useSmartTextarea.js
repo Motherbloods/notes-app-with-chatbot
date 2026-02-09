@@ -4,6 +4,58 @@ function useSmartTextarea(inputContent, setInputContent) {
   const textareaRef = useRef(null);
 
   const handleKeyDown = (e) => {
+    if (e.key === "ArrowUp") {
+      const textarea = e.target;
+      const cursorPos = textarea.selectionStart;
+      const text = textarea.value;
+
+      const lines = text.split("\n");
+
+      const textBeforeCursor = text.slice(0, cursorPos);
+      const currentLineIndex = textBeforeCursor.split("\n").length - 1;
+
+      if (currentLineIndex <= 0) return;
+
+      const currentLine = lines[currentLineIndex];
+      let prevLine = lines[currentLineIndex - 1];
+
+      const currentMatch = currentLine.match(/^(\d+)\.\s*/);
+      const prevMatch = prevLine.match(/^(\d+)\.\s*/);
+
+      if (!currentMatch || !prevMatch) return;
+
+      const currentLineStart =
+        lines.slice(0, currentLineIndex).join("\n").length +
+        (currentLineIndex > 0 ? 1 : 0);
+
+      const cursorColumn = cursorPos - currentLineStart;
+      const currentPrefixLength = currentMatch[0].length;
+
+      if (cursorColumn > currentPrefixLength) return;
+
+      e.preventDefault();
+
+      if (/^\d+\.$/.test(prevLine)) {
+        prevLine = prevLine + " ";
+        lines[currentLineIndex - 1] = prevLine;
+
+        const updatedText = lines.join("\n");
+        textarea.value = updatedText;
+      }
+
+      const newPrevMatch = lines[currentLineIndex - 1].match(/^(\d+)\.\s*/);
+      const prevPrefixLength = newPrevMatch[0].length;
+      const prevLineStart =
+        lines.slice(0, currentLineIndex - 1).join("\n").length +
+        (currentLineIndex - 1 > 0 ? 1 : 0);
+
+      const newCursorPos = prevLineStart + prevPrefixLength;
+
+      requestAnimationFrame(() => {
+        textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+      });
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       const textarea = textareaRef.current;
       const cursorPos = textarea.selectionStart;
@@ -22,31 +74,40 @@ function useSmartTextarea(inputContent, setInputContent) {
 
         e.preventDefault();
 
-        const normalizedCurrentLine =
-          restText.trim().length > 0
-            ? `${currentNum}. ${restText}`
-            : `${currentNum}.`;
+        const cursorInLine =
+          textarea.selectionStart -
+          (textBeforeCursor.length - currentLine.length);
+
+        const beforeCursorText = currentLine.slice(0, cursorInLine);
+        const afterCursorText = currentLine.slice(cursorInLine);
 
         const textBeforeLine = textBeforeCursor.slice(
           0,
           textBeforeCursor.length - currentLine.length,
         );
 
+        const updatedAfterCursor = textAfterCursor.replace(
+          /^(\d+)\.\s/gm,
+          (match, num) => `${parseInt(num, 10) + 1}. `,
+        );
+
         const newText =
           textBeforeLine +
-          normalizedCurrentLine +
+          beforeCursorText.trimEnd() +
           "\n" +
-          `${nextNum}. ` +
-          textAfterCursor;
+          `${nextNum}. ${afterCursorText.replace(/^\d+\.\s?/, "")}` +
+          updatedAfterCursor;
 
         setInputContent(newText);
 
         setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd =
+          const newCursorPos =
             textBeforeLine.length +
-            normalizedCurrentLine.length +
+            beforeCursorText.trimEnd().length +
             1 +
-            `${nextNum}. `.length;
+            `${currentNum}. `.length;
+
+          textarea.selectionStart = textarea.selectionEnd = newCursorPos;
         }, 0);
 
         return;
