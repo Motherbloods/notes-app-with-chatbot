@@ -115,6 +115,7 @@ function NotesPage() {
             await deleteNoteById(noteToDelete);
             setNotes(prevNotes => prevNotes.filter(n => n._id !== noteToDelete));
             setNoteToDelete(null);
+            decrementCounter(category);
         } catch (error) {
             console.error("Error deleting note:", error);
         }

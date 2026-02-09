@@ -98,17 +98,16 @@ function useSmartTextarea(inputContent, setInputContent) {
           `${nextNum}. ${afterCursorText.replace(/^\d+\.\s?/, "")}` +
           updatedAfterCursor;
 
+        const newCursorPos =
+          textBeforeLine.length +
+          beforeCursorText.trimEnd().length +
+          1 +
+          `${nextNum}. `.length;
+
         setInputContent(newText);
 
-        setTimeout(() => {
-          const newCursorPos =
-            textBeforeLine.length +
-            beforeCursorText.trimEnd().length +
-            1 +
-            `${currentNum}. `.length;
-
-          textarea.selectionStart = textarea.selectionEnd = newCursorPos;
-        }, 0);
+        textarea.value = newText;
+        textarea.selectionStart = textarea.selectionEnd = newCursorPos;
 
         return;
       }
@@ -123,35 +122,65 @@ function useSmartTextarea(inputContent, setInputContent) {
 
         e.preventDefault();
 
+        const cursorInLine =
+          textarea.selectionStart -
+          (textBeforeCursor.length - currentLine.length);
+
         const textBeforeLine = textBeforeCursor.slice(
           0,
           textBeforeCursor.length - currentLine.length,
         );
 
+        const prefixPattern = /^\s*([-•*])?\s*\[([ xX]?)\]\s*/;
+        const prefixMatch = currentLine.match(prefixPattern);
+        const prefixLength = prefixMatch ? prefixMatch[0].length : 0;
+
         if (restText.trim() === "") {
           const newText = textBeforeLine + "\n" + textAfterCursor;
+          const newCursorPos = textBeforeLine.length + 1;
 
           setInputContent(newText);
 
-          setTimeout(() => {
-            textarea.selectionStart = textarea.selectionEnd =
-              textBeforeLine.length + 1;
-          }, 0);
+          // Set immediately on textarea value to prevent flickering
+          textarea.value = newText;
+          textarea.selectionStart = textarea.selectionEnd = newCursorPos;
 
           return;
         }
 
-        const normalizedCurrentLine = `- [${checked}] ${restText}`;
+        if (cursorInLine <= prefixLength) {
+          const normalizedCurrentLine = `- [${checked}] ${restText}`;
+          const newText =
+            textBeforeLine + "\n" + normalizedCurrentLine + textAfterCursor;
+          const newCursorPos = textBeforeLine.length + 1;
+
+          setInputContent(newText);
+
+          textarea.value = newText;
+          textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+
+          return;
+        }
+
+        const cursorInRestText = cursorInLine - prefixLength;
+        const beforeCursorText = restText.slice(0, cursorInRestText);
+        const afterCursorText = restText.slice(cursorInRestText);
+
+        const normalizedCurrentLine = `- [${checked}] ${beforeCursorText}`;
 
         const newText =
-          textBeforeLine + normalizedCurrentLine + "\n" + textAfterCursor;
+          textBeforeLine +
+          normalizedCurrentLine +
+          "\n" +
+          afterCursorText +
+          textAfterCursor;
+        const newCursorPos =
+          textBeforeLine.length + normalizedCurrentLine.length + 1;
 
         setInputContent(newText);
 
-        setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd =
-            textBeforeLine.length + normalizedCurrentLine.length + 1 + 6; // panjang "- [ ] "
-        }, 0);
+        textarea.value = newText;
+        textarea.selectionStart = textarea.selectionEnd = newCursorPos;
 
         return;
       }
@@ -174,13 +203,13 @@ function useSmartTextarea(inputContent, setInputContent) {
 
         const newText =
           textBeforeLine + normalizedCurrentLine + "\n- " + textAfterCursor;
+        const newCursorPos =
+          textBeforeLine.length + normalizedCurrentLine.length + 1 + 2;
 
         setInputContent(newText);
 
-        setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd =
-            textBeforeLine.length + normalizedCurrentLine.length + 1 + 2;
-        }, 0);
+        textarea.value = newText;
+        textarea.selectionStart = textarea.selectionEnd = newCursorPos;
 
         return;
       }
@@ -194,10 +223,12 @@ function useSmartTextarea(inputContent, setInputContent) {
       const end = textarea.selectionEnd;
       const newText =
         inputContent.substring(0, start) + "  " + inputContent.substring(end);
+      const newCursorPos = start + 2;
+
       setInputContent(newText);
-      setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-      }, 0);
+
+      textarea.value = newText;
+      textarea.selectionStart = textarea.selectionEnd = newCursorPos;
     }
   };
   return {
