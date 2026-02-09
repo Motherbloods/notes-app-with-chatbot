@@ -55,20 +55,40 @@ function Notes() {
             .trim();
     };
     const analyzeContent = async (content) => {
-        setIsAnalyzing(true);
-        const cleaned = cleanEmptyListItems(content);
-        setCleanedContent(cleaned);
-        const result = await analyzingNotes({ content: cleaned });
-        console.log("Hasil analisis:", result);
-        setAnalysisResult({
-            category: result.data?.category || "ide",
-            confidence: result.data?.confidence,
-            errors: result.data?.errors,
-            codeMetadata: result.data?.codeMetadata
-        });
-        setIsAnalyzing(false);
-        setShowConfirmation(true)
-    }
+        if (!content.trim()) return;
+
+        try {
+            setIsAnalyzing(true);
+
+            const cleaned = cleanEmptyListItems(content);
+
+            const result = await analyzingNotes({ content: cleaned });
+
+            const data = result?.data || {};
+
+            const reformattedContent = data.reformattedContent ?? cleaned;
+
+            setCleanedContent(reformattedContent);
+
+            setAnalysisResult({
+                category: data.category ?? "ide",
+                confidence: data.confidence ?? 0,
+                errors: data.errors ?? [],
+                codeMetadata: data.codeMetadata ?? null,
+                lineFormats: data.lineFormats ?? [],
+                reformattedContent,
+            });
+
+            console.log("Hasil analisis:", data);
+
+            setShowConfirmation(true);
+
+        } catch (error) {
+            console.error("Gagal analyze:", error);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
 
     return <div className="flex-1 p-8">
         <h2 className="text-2xl font-bold mb-2 text-gray-800">Paste Anything Here</h2>
@@ -116,6 +136,7 @@ Contoh checklist:
             confidence={analysisResult.data?.confidence}
             errors={analysisResult.data?.errors}
             codeMetadata={analysisResult.codeMetadata}
+            lineFormats={analysisResult.lineFormats}
             onCategoryChange={(cat) =>
                 setAnalysisResult((prev) => ({ ...prev, category: cat }))
             }

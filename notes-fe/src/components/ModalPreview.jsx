@@ -9,6 +9,7 @@ function ModalPreview({
     confidence,
     errors,
     codeMetadata,
+    lineFormats,
     onCategoryChange,
     onSave,
 }) {
@@ -149,10 +150,56 @@ function ModalPreview({
                             </div>
                         </div>
                     ) : (
-                        <div>
-                            <label className="text-sm font-semibold text-gray-700 mb-2 block">Preview:</label>
-                            <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 max-h-64 overflow-auto whitespace-pre-wrap">
-                                {inputContent}
+                        <div className="space-y-4">
+                            {lineFormats && lineFormats.length > 0 && (
+                                <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 text-blue-700 font-semibold mb-2">
+                                        <CheckCircle2 size={18} />
+                                        <span>AI Format Suggestions Applied ✨</span>
+                                    </div>
+                                    <p className="text-xs text-blue-600 mb-3">
+                                        {lineFormats.filter(f => f.suggestedFormat !== 'keep').length} line(s) converted to better format
+                                    </p>
+                                    <details className="cursor-pointer">
+                                        <summary className="text-sm text-blue-700 font-medium hover:underline">
+                                            Show conversion details
+                                        </summary>
+                                        <div className="mt-3 space-y-2">
+                                            {lineFormats.map((lineFormat, i) => {
+                                                if (lineFormat.suggestedFormat === 'keep') return null;
+                                                return (
+                                                    <div key={i} className="bg-white rounded p-3 border border-blue-200 text-xs">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className={`px-2 py-0.5 rounded font-medium ${lineFormat.suggestedFormat === 'checklist' ? 'bg-green-100 text-green-700' :
+                                                                lineFormat.suggestedFormat === 'numbered' ? 'bg-purple-100 text-purple-700' :
+                                                                    'bg-orange-100 text-orange-700'
+                                                                }`}>
+                                                                {lineFormat.suggestedFormat}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-gray-500 line-through mb-1">{lineFormat.originalLine}</div>
+                                                        <div className="text-gray-700 font-medium mb-1">{lineFormat.convertedLine}</div>
+                                                        <div className="text-gray-600 italic">{lineFormat.reason}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </details>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                    {lineFormats && lineFormats.length > 0 ? '✨ AI-Formatted Preview:' : 'Preview:'}
+                                </label>
+                                <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 max-h-64 overflow-auto whitespace-pre-wrap">
+                                    {inputContent}
+                                </div>
+                                {lineFormats && lineFormats.length > 0 && (
+                                    <p className="text-xs text-gray-500 mt-2 italic">
+                                        💡 Your original input will be saved for reference
+                                    </p>
+                                )}
                             </div>
                         </div>
                     )}
@@ -171,7 +218,7 @@ function ModalPreview({
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                     >
                         <Check size={18} />
-                        Simpan
+                        {lineFormats && lineFormats.length > 0 ? 'Save with AI Format' : 'Simpan'}
                     </button>
                 </div>
             </div>
