@@ -51,6 +51,7 @@ const createNoteService = async (noteData) => {
 const getCategoriesNotesCountService = async () => {
   try {
     const counts = await Note.aggregate([
+      { $match: { deletedAt: null } },
       { $group: { _id: "$category", count: { $sum: 1 } } },
       { $project: { category: "$_id", count: 1, _id: 0 } },
     ]);
