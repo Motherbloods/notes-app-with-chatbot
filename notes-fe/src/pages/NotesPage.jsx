@@ -8,6 +8,7 @@ import { isThisMonth, isThisWeek, isToday } from "../config/date";
 import ConfirmModal from "../components/ConfirmModal";
 import EditModal from "../components/EditModal";
 import { useNotes } from "../context/NotesContext";
+import toast from "react-hot-toast";
 
 function NotesPage() {
     const { decrementCounter, incrementCounter } = useNotes();
@@ -116,8 +117,10 @@ function NotesPage() {
             setNotes(prevNotes => prevNotes.filter(n => n._id !== noteToDelete));
             setNoteToDelete(null);
             decrementCounter(category);
+            toast.success("Berhasil Menghapus Note")
         } catch (error) {
             console.error("Error deleting note:", error);
+            toast.error("⚠️ Gagal menghapus note. Silakan coba lagi.");
         }
     }
 

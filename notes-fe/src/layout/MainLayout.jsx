@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { useNotes } from "../context/NotesContext";
 import { useState } from "react";
+import { Toaster } from "react-hot-toast";
 
 function MainLayout() {
     const [search, setSearch] = useState("");
@@ -11,6 +12,7 @@ function MainLayout() {
         <div className="flex-1 p-4 overflow-hidden">
             <Outlet />
         </div>
+        <Toaster position="top-right" reverseOrder={false} />
     </div>);
 }
 

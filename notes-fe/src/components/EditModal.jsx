@@ -1,6 +1,7 @@
 import { React, useState } from "react";
 import { X, Check, AlertTriangle, CheckCircle2, Code2, RefreshCw, Loader2, FileText, Sparkles } from "lucide-react";
 import useSmartTextarea from "../hooks/useSmartTextarea";
+import toast from "react-hot-toast";
 
 function EditModal({ onClose, onSave, initialData }) {
     const defaultData = initialData || {};
@@ -38,8 +39,10 @@ function EditModal({ onClose, onSave, initialData }) {
                 reanalyze: reanalyze || categoryChanged,
             };
             await onSave(updatedNote);
+            toast.success("Berhasil Edit Note")
         } catch (error) {
             console.error("Error saving note:", error);
+            toast.error("⚠️ Gagal menyimpan note. Silakan coba lagi.");
         } finally {
             setIsSaving(false);
         }

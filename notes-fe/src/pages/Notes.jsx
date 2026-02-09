@@ -5,6 +5,7 @@ import ModalPreview from "../components/ModalPreview";
 import { analyzingNotes } from "../api/analyzing";
 import { saveNoteData } from "../services/notesService";
 import { useNotes } from "../context/NotesContext";
+import toast from "react-hot-toast";
 
 function Notes() {
     const [showConfirmation, setShowConfirmation] = useState(false);
@@ -22,6 +23,7 @@ function Notes() {
         setInputContent("");
         setCleanedContent("");
         incrementCounter(analysisResult.category);
+        toast.success('Berhasil Membuat Note')
     };
 
     const { textareaRef, handleKeyDown } = useSmartTextarea(inputContent, setInputContent);
