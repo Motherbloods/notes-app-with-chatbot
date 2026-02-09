@@ -1,6 +1,6 @@
 import { React, useState } from "react";
-import { X, Check, AlertTriangle, CheckCircle2, Code2, RefreshCw, Loader2 } from "lucide-react";
-import useSmartTextarea from "../hooks/useSmartTextarea"; // Sesuaikan path
+import { X, Check, AlertTriangle, CheckCircle2, Code2, RefreshCw, Loader2, FileText, Sparkles } from "lucide-react";
+import useSmartTextarea from "../hooks/useSmartTextarea";
 
 function EditModal({ onClose, onSave, initialData }) {
     const defaultData = initialData || {};
@@ -8,6 +8,7 @@ function EditModal({ onClose, onSave, initialData }) {
     const [category, setCategory] = useState(defaultData.category || "catatan");
     const [inputContent, setInputContent] = useState(defaultData.content || "");
     const [showSuggested, setShowSuggested] = useState(false);
+    const [showOriginal, setShowOriginal] = useState(false);
     const [reanalyze, setReanalyze] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -17,6 +18,8 @@ function EditModal({ onClose, onSave, initialData }) {
 
     const isCode = defaultData.contentType === "code";
     const categoryChanged = category !== defaultData.category;
+    const hasOriginalContent = defaultData.originalContent && defaultData.originalContent !== defaultData.content;
+    const hasSuggestedCode = defaultData.suggestedCode && defaultData.suggestedCode !== defaultData.content;
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -44,7 +47,7 @@ function EditModal({ onClose, onSave, initialData }) {
 
     return (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto">
 
                 <div className="p-6 border-b border-gray-200 flex justify-between items-start">
                     <div>
@@ -61,6 +64,7 @@ function EditModal({ onClose, onSave, initialData }) {
                 </div>
 
                 <div className="p-6 space-y-4">
+                    {/* Category Selection */}
                     <div>
                         <label className="text-sm font-semibold text-gray-700">Kategori:</label>
                         <div className="mt-2">
@@ -83,6 +87,7 @@ function EditModal({ onClose, onSave, initialData }) {
                         )}
                     </div>
 
+                    {/* Reanalyze Checkbox for Code */}
                     {isCode && (
                         <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                             <input
@@ -100,7 +105,8 @@ function EditModal({ onClose, onSave, initialData }) {
                         </div>
                     )}
 
-                    {isCode ? (
+                    {/* Code Metadata */}
+                    {isCode && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-4 text-sm">
                                 <div className="flex items-center gap-2">
@@ -119,6 +125,7 @@ function EditModal({ onClose, onSave, initialData }) {
                                 )}
                             </div>
 
+                            {/* Analysis Errors */}
                             {initialData.analysisErrors?.length > 0 && (
                                 <div className="border border-orange-200 bg-orange-50 rounded-lg p-4">
                                     <div className="flex items-center gap-2 text-orange-700 font-semibold mb-3">
@@ -150,72 +157,138 @@ function EditModal({ onClose, onSave, initialData }) {
                                     </div>
                                 </div>
                             )}
-
-                            {initialData.suggestedCode && initialData.suggestedCode !== initialData.content && (
-                                <div className="flex gap-2 border-b border-gray-200">
-                                    <button
-                                        onClick={() => setShowSuggested(false)}
-                                        disabled={isSaving}
-                                        className={`px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${!showSuggested
-                                            ? 'text-blue-600 border-b-2 border-blue-600'
-                                            : 'text-gray-500 hover:text-gray-700'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <Code2 size={16} />
-                                            Original Code
-                                        </div>
-                                    </button>
-                                    <button
-                                        onClick={() => setShowSuggested(true)}
-                                        disabled={isSaving}
-                                        className={`px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${showSuggested
-                                            ? 'text-green-600 border-b-2 border-green-600'
-                                            : 'text-gray-500 hover:text-gray-700'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <CheckCircle2 size={16} />
-                                            Suggested Fix
-                                        </div>
-                                    </button>
-                                </div>
-                            )}
-
-                            <div>
-                                <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                                    {showSuggested ? '✅ Suggested Code:' : 'Preview:'}
-                                </label>
-                                <textarea
-                                    ref={showSuggested ? null : textareaRef}
-                                    value={showSuggested ? initialData.suggestedCode : inputContent}
-                                    onChange={showSuggested ? undefined : (e) => setInputContent(e.target.value)}
-                                    onKeyDown={showSuggested ? undefined : handleKeyDown}
-                                    readOnly={showSuggested || isSaving}
-                                    disabled={isSaving}
-                                    className={`w-full p-4 border border-gray-300 rounded-lg text-sm text-gray-700 max-h-96 overflow-auto font-mono resize-none 
-            ${showSuggested || isSaving ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-text'}`}
-                                    rows={12}
-                                />
-                            </div>
-
-                        </div>
-                    ) : (
-                        <div>
-                            <label className="text-sm font-semibold text-gray-700 mb-2 block">Preview:</label>
-                            <textarea
-                                ref={textareaRef}
-                                value={inputContent}
-                                onChange={(e) => setInputContent(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                disabled={isSaving}
-                                className="w-full p-4 border border-gray-300 rounded-lg text-sm text-gray-700 max-h-64 overflow-auto resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                rows={8}
-                            />
                         </div>
                     )}
+
+                    {/* Tabs for different views */}
+                    <div className="border-b border-gray-200">
+                        <div className="flex gap-1">
+                            {/* Current/Edit Tab */}
+                            <button
+                                onClick={() => {
+                                    setShowOriginal(false);
+                                    setShowSuggested(false);
+                                }}
+                                disabled={isSaving}
+                                className={`px-4 py-2.5 text-sm font-medium transition-all disabled:opacity-50 rounded-t-lg ${!showOriginal && !showSuggested
+                                    ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <FileText size={16} />
+                                    {isCode ? 'Current Code' : 'Current Content'}
+                                </div>
+                            </button>
+
+                            {/* Original Content Tab */}
+                            {hasOriginalContent && (
+                                <button
+                                    onClick={() => {
+                                        setShowOriginal(true);
+                                        setShowSuggested(false);
+                                    }}
+                                    disabled={isSaving}
+                                    className={`px-4 py-2.5 text-sm font-medium transition-all disabled:opacity-50 rounded-t-lg ${showOriginal
+                                        ? 'text-purple-600 bg-purple-50 border-b-2 border-purple-600'
+                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <FileText size={16} />
+                                        Original
+                                        <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">Raw</span>
+                                    </div>
+                                </button>
+                            )}
+
+                            {/* Suggested Code Tab (only for code) */}
+                            {isCode && hasSuggestedCode && (
+                                <button
+                                    onClick={() => {
+                                        setShowOriginal(false);
+                                        setShowSuggested(true);
+                                    }}
+                                    disabled={isSaving}
+                                    className={`px-4 py-2.5 text-sm font-medium transition-all disabled:opacity-50 rounded-t-lg ${showSuggested
+                                        ? 'text-green-600 bg-green-50 border-b-2 border-green-600'
+                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles size={16} />
+                                        AI Suggestion
+                                        <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">Fixed</span>
+                                    </div>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Content Display Area */}
+                    <div className="space-y-2">
+                        {/* Info Banner */}
+                        {showOriginal && (
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-start gap-2">
+                                <FileText size={16} className="text-purple-600 mt-0.5 shrink-0" />
+                                <div className="text-sm text-purple-800">
+                                    <span className="font-semibold">Original Content</span> - Ini adalah konten asli sebelum diformat oleh AI
+                                </div>
+                            </div>
+                        )}
+
+                        {showSuggested && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-2">
+                                <Sparkles size={16} className="text-green-600 mt-0.5 shrink-0" />
+                                <div className="text-sm text-green-800">
+                                    <span className="font-semibold">AI-Suggested Fix</span> - Kode yang sudah diperbaiki oleh AI
+                                </div>
+                            </div>
+                        )}
+
+                        {!showOriginal && !showSuggested && (
+                            <label className="text-sm font-semibold text-gray-700 block">
+                                {isCode ? 'Edit Code:' : 'Edit Content:'}
+                            </label>
+                        )}
+
+                        {/* Textarea */}
+                        <textarea
+                            ref={showOriginal || showSuggested ? null : textareaRef}
+                            value={
+                                showOriginal
+                                    ? initialData.originalContent
+                                    : showSuggested
+                                        ? initialData.suggestedCode
+                                        : inputContent
+                            }
+                            onChange={showOriginal || showSuggested ? undefined : (e) => setInputContent(e.target.value)}
+                            onKeyDown={showOriginal || showSuggested ? undefined : handleKeyDown}
+                            readOnly={showOriginal || showSuggested || isSaving}
+                            disabled={isSaving}
+                            className={`w-full p-4 border rounded-lg text-sm max-h-96 overflow-auto resize-none
+                                ${isCode ? 'font-mono text-gray-800' : 'text-gray-700'}
+                                ${showOriginal
+                                    ? 'bg-purple-50 border-purple-300 cursor-default'
+                                    : showSuggested
+                                        ? 'bg-green-50 border-green-300 cursor-default'
+                                        : isSaving
+                                            ? 'bg-gray-100 border-gray-300 cursor-not-allowed'
+                                            : 'bg-white border-gray-300 cursor-text focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                                }`}
+                            rows={14}
+                        />
+
+                        {/* Comparison Note */}
+                        {hasOriginalContent && !showOriginal && !isCode && (
+                            <p className="text-xs text-gray-500 italic">
+                                💡 Tip: Konten ini sudah diformat otomatis. Klik tab "Original" untuk melihat versi aslinya.
+                            </p>
+                        )}
+                    </div>
                 </div>
 
+                {/* Footer Actions */}
                 <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
                     <button
                         onClick={onClose}
