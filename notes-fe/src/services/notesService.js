@@ -1,6 +1,10 @@
 import { createNotes } from "../api/notes";
 
-export const saveNoteData = async (content, analysisResult) => {
+export const saveNoteData = async (
+  content,
+  analysisResult,
+  originalContent,
+) => {
   const notesData = {
     content,
     contentType: analysisResult?.category === "kode" ? "code" : "text",
@@ -12,6 +16,11 @@ export const saveNoteData = async (content, analysisResult) => {
       errors:
         analysisResult?.codeMetadata?.errors ?? analysisResult?.errors ?? [],
     },
+    originalContent: originalContent || null,
+    wasReformatted:
+      originalContent &&
+      originalContent.trim().toLowerCase() !== content.trim().toLowerCase(),
+    lineFormats: analysisResult?.lineFormats || [],
   };
 
   return await createNotes(notesData);

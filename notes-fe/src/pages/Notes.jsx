@@ -11,11 +11,12 @@ function Notes() {
     const [analysisResult, setAnalysisResult] = useState({ category: "ide" });
     const [inputContent, setInputContent] = useState("");
     const [cleanedContent, setCleanedContent] = useState("");
+    const [originalContent, setOriginalContent] = useState("");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const { incrementCounter } = useNotes();
 
     const saveNote = async () => {
-        const result = await saveNoteData(cleanedContent, analysisResult);
+        const result = await saveNoteData(cleanedContent, analysisResult, originalContent);
         console.log("Simpan note:", result);
         setShowConfirmation(false);
         setInputContent("");
@@ -61,6 +62,7 @@ function Notes() {
             setIsAnalyzing(true);
 
             const cleaned = cleanEmptyListItems(content);
+            setOriginalContent(content);
 
             const result = await analyzingNotes({ content: cleaned });
 

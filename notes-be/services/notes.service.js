@@ -10,6 +10,9 @@ const createNoteService = async (noteData) => {
       language,
       analysis,
       suggestedCode,
+      originalContent,
+      wasReformatted,
+      lineFormats,
     } = noteData;
 
     const confidence = analysis?.confidence ?? 0;
@@ -33,13 +36,17 @@ const createNoteService = async (noteData) => {
 
     const newNote = new Note({
       content,
+      originalContent: originalContent || null,
+      wasReformatted,
       contentType: contentType || "text",
       category,
       language: language || null,
       confidence,
       analysisErrors,
+      lineFormats: lineFormats || [],
       suggestedCode: suggestedCode || null, // Store the corrected version
     });
+    console.log("New Note (object):", newNote.toObject());
 
     return await newNote.save();
   } catch (error) {
