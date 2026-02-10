@@ -1,10 +1,27 @@
 import React, { useState } from "react";
-
+import { Copy, Check } from "lucide-react";
+import toast from "react-hot-toast";
 function CodeWithTabs({ note }) {
     const [activeTab, setActiveTab] = useState("suggested");
+    const [copied, setCopied] = useState(false);
 
     const suggestedCode = note.suggestedCode;
     const originalCode = note.content;
+
+    const currentCode =
+        activeTab === "suggested" ? suggestedCode : originalCode;
+
+    const handleCopy = async (e) => {
+        e.stopPropagation();
+        try {
+            await navigator.clipboard.writeText(currentCode);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+            toast.success("Code Berhasil Dicopy")
+        } catch (err) {
+            console.error("Copy failed:", err);
+        }
+    };
 
     return (
         <div className="space-y-2">
@@ -29,17 +46,24 @@ function CodeWithTabs({ note }) {
                 </button>
             </div>
 
-            {activeTab === "suggested" && (
-                <pre className="bg-gray-900 text-gray-100 p-3 rounded text-xs overflow-auto max-h-64 font-mono leading-relaxed whitespace-pre">
-                    {suggestedCode}
-                </pre>
-            )}
+            <div className="relative">
+                <button
+                    onClick={handleCopy}
+                    className="absolute top-2 right-5 p-1.5 rounded-md cursor-pointer bg-gray-700 text-gray-200 hover:bg-gray-600 hover:text-white transition"
+                    title="Copy code"
+                >
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                </button>
 
-            {activeTab === "original" && (
-                <pre className="bg-gray-800 text-gray-300 p-3 rounded text-xs overflow-auto max-h-64 font-mono leading-relaxed whitespace-pre">
-                    {originalCode}
+                <pre
+                    className={`${activeTab === "suggested"
+                        ? "bg-gray-900 text-gray-100"
+                        : "bg-gray-800 text-gray-300"
+                        } p-3 rounded text-xs overflow-auto max-h-64 font-mono leading-relaxed whitespace-pre`}
+                >
+                    {currentCode}
                 </pre>
-            )}
+            </div>
         </div>
     );
 }
