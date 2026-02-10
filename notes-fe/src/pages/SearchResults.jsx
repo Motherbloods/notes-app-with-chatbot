@@ -2,10 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Search, ArrowLeft, Loader2 } from "lucide-react";
 import categories from "../config/categories";
-
-const searchNotes = async (query) => {
-    return [];
-};
+import { searchLiveNotes } from "../api/search";
 
 function SearchResults() {
     const [searchParams] = useSearchParams();
@@ -13,6 +10,16 @@ function SearchResults() {
 
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+
+    const searchNotes = async (query) => {
+        try {
+            const response = await searchLiveNotes(query);
+            return response;
+        } catch (error) {
+            console.error("Error fetching notes:", error);
+            return [];
+        }
+    };
 
     useEffect(() => {
         const performSearch = async () => {
@@ -89,8 +96,8 @@ function SearchResults() {
 
                             return (
                                 <Link
-                                    key={note.id}
-                                    to={`/notes/${note.id}`}
+                                    key={note._id}
+                                    to={`/notes/${note._id}`}
                                     className="block p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-blue-300 transition"
                                 >
                                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
