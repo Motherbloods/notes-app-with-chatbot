@@ -1,5 +1,6 @@
 const Note = require("../models/notes.js");
 const { analyzingNotesWithLLM } = require("./analyzing.service.js");
+const { generateEmbedding } = require("./embbeding.service.js");
 
 const createNoteService = async (noteData) => {
   try {
@@ -34,17 +35,21 @@ const createNoteService = async (noteData) => {
       throw new Error("Invalid confidence value (must be between 0 and 1)");
     }
 
+    const embedding = await generateEmbedding(content);
+    const embeddingVector = embedding.data[0].embedding;
+
     const newNote = new Note({
       content,
       originalContent: originalContent || null,
       wasReformatted,
       contentType: contentType || "text",
       category,
+      embedding: embeddingVector,
       language: language || null,
       confidence,
       analysisErrors,
       lineFormats: lineFormats || [],
-      suggestedCode: suggestedCode || null, // Store the corrected version
+      suggestedCode: suggestedCode || null,
     });
     console.log("New Note (object):", newNote.toObject());
 
