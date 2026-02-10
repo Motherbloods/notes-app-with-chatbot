@@ -1,8 +1,9 @@
 import React from "react";
-import { Code2, AlertTriangle, Trash2 } from "lucide-react";
+import { Code2, AlertTriangle, Trash2, Pin } from "lucide-react";
 import renderFormattedContent from "./renderFormattedContent";
 
-export default function NoteCard({ note, toggleChecklistItem, onDelete, onSelectNote }) {
+export default function NoteCard({ note, toggleChecklistItem, onDelete, onSelectNote, onPinned }) {
+
     return (
         <div
             className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm
@@ -15,14 +16,34 @@ export default function NoteCard({ note, toggleChecklistItem, onDelete, onSelect
                     {new Date(note.createdAt).toLocaleString("id-ID")}
                 </span>
 
-                <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(note._id) }}
-                    className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
-                    title="Hapus catatan"
-                >
-                    <Trash2 size={16} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onPinned({ _id: note._id, isPinned: !note.isPinned });
+                        }}
+                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${note.isPinned
+                            ? "text-yellow-500 bg-yellow-50 hover:bg-yellow-100"
+                            : "text-gray-400 hover:text-yellow-500 hover:bg-gray-100"
+                            }`}
+                        title={note.isPinned ? "Unpin Catatan" : "Pin Catatan"}
+                    >
+                        <Pin size={16} />
+                    </button>
+
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(note._id);
+                        }}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Hapus catatan"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
             </div>
+
 
 
             {note.category == "kode" && (

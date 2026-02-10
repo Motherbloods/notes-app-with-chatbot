@@ -211,7 +211,7 @@ function NotesPage() {
 
             <ArchivedNotice notes={archivedNotes} />
 
-            <NotesList notes={filteredNotes} toggleChecklistItem={toggleChecklistItem} onDelete={setNoteToDelete} onSelectNote={setSelectedNote} />
+            <NotesList notes={filteredNotes} toggleChecklistItem={toggleChecklistItem} onDelete={setNoteToDelete} onSelectNote={setSelectedNote} onPinned={handleEditNote} />
             {noteToDelete && (
                 <ConfirmModal
                     message="Yakin mau hapus catatan ini?"

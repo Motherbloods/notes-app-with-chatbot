@@ -31,6 +31,11 @@ const noteSchema = new mongoose.Schema(
       default: "text",
     },
 
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+
     language: {
       type: String,
       default: null,
