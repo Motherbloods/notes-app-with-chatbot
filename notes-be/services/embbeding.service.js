@@ -1,3 +1,4 @@
+const Note = require("../models/notes.js");
 const generateEmbedding = async (note) => {
   try {
     if (!note || note.trim().length === 0) {
@@ -35,5 +36,19 @@ const generateEmbedding = async (note) => {
     throw e;
   }
 };
+const searchLiveNotesService = async (query) => {
+  try {
+    if (!query) return [];
 
-module.exports = { generateEmbedding };
+    const regex = new RegExp(query, "i");
+    const result = await Note.find({ content: regex });
+    console.log("ini result DB", result);
+
+    return result;
+  } catch (e) {
+    console.error("Search service error:", e);
+    return [];
+  }
+};
+
+module.exports = { generateEmbedding, searchLiveNotesService };
