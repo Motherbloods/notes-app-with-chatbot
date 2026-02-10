@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
-import MainLayout from "./layout/Mainlayout"
+import MainLayout from "./layout/MainLayout.jsx"
 import routes from "./config/routes.jsx"
 import { NotesProvider } from "./context/NotesContext.jsx"
 
