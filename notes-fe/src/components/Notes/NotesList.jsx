@@ -1,5 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import NoteCard from "./NoteCard";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 export default function NotesList({
     notes,
@@ -8,6 +9,9 @@ export default function NotesList({
     onSelectNote,
     onPinned,
 }) {
+    const containerRef = useRef(null);
+    const previousNotesOrder = useRef([]);
+
     const sortedNotes = useMemo(() => {
         if (!notes) return [];
 
@@ -22,6 +26,21 @@ export default function NotesList({
         return [...pinned, ...others];
     }, [notes]);
 
+    useEffect(() => {
+        const currentOrder = sortedNotes.map(n => n._id).join(',');
+        const previousOrder = previousNotesOrder.current.join(',');
+
+        if (currentOrder !== previousOrder && previousOrder.length > 0) {
+            const firstNoteChanged = sortedNotes[0]?._id !== previousNotesOrder.current[0];
+
+            if (firstNoteChanged && containerRef.current) {
+                containerRef.current.scrollTop = 0;
+            }
+        }
+
+        previousNotesOrder.current = sortedNotes.map(n => n._id);
+    }, [sortedNotes]);
+
     if (!sortedNotes.length) {
         return (
             <p className="text-gray-400 text-center py-12">
@@ -31,17 +50,36 @@ export default function NotesList({
     }
 
     return (
-        <div className="space-y-4 max-h-[90vh] overflow-y-auto pr-2">
-            {sortedNotes.map((note) => (
-                <NoteCard
-                    key={note._id}
-                    note={note}
-                    toggleChecklistItem={toggleChecklistItem}
-                    onDelete={onDelete}
-                    onSelectNote={onSelectNote}
-                    onPinned={onPinned}
-                />
-            ))}
+        <div
+            ref={containerRef}
+            className="max-h-[90vh] overflow-y-auto pr-2"
+            style={{ scrollBehavior: 'auto' }}
+        >
+            <LayoutGroup>
+                <motion.div className="space-y-4">
+                    <AnimatePresence mode="popLayout">
+                        {sortedNotes.map((note) => (
+                            <motion.div
+                                key={note._id}
+                                layout
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            >
+
+                                <NoteCard
+                                    note={note}
+                                    toggleChecklistItem={toggleChecklistItem}
+                                    onDelete={onDelete}
+                                    onSelectNote={onSelectNote}
+                                    onPinned={onPinned}
+                                />
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
+            </LayoutGroup>
         </div>
     );
 }
