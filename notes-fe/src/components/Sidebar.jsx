@@ -3,10 +3,30 @@ import {
     Save,
     MessageSquare
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import categories from "../config/categories";
 
-function Sidebar({ notesCount, search, onSearchChange }) {
+function Sidebar({ notesCount }) {
+    const [searchInput, setSearchInput] = useState("");
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (!location.pathname.startsWith('/search')) {
+            setSearchInput("");
+        }
+    }, [location.pathname]);
+
+    useEffect(() => {
+        if (!searchInput.trim()) return;
+
+        const timer = setTimeout(() => {
+            navigate(`/search?q=${encodeURIComponent(searchInput)}`);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchInput, navigate]);
 
     return (
         <div className="w-64 bg-white border-r border-gray-200 p-4">
@@ -26,9 +46,11 @@ function Sidebar({ notesCount, search, onSearchChange }) {
                 <span>New Note</span>
             </NavLink>
 
-
             <div className="mb-4">
-                <SearchBar keyword={search} onChange={onSearchChange} />
+                <SearchBar
+                    keyword={searchInput}
+                    onChange={setSearchInput}
+                />
             </div>
 
             <div className="space-y-1">
@@ -71,4 +93,4 @@ function Sidebar({ notesCount, search, onSearchChange }) {
     );
 }
 
-export default Sidebar;
+export default Sidebar; 
