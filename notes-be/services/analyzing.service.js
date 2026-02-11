@@ -273,6 +273,172 @@ Return JSON:
   }
 };
 
+const generateTitleFromLLM = async (msg) => {
+  try {
+    const apikey = process.env.OPENROUTER_API_KEY;
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + apikey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-4o-mini",
+          max_tokens: 50,
+          temperature: 0.3,
+          messages: [
+            {
+              role: "system",
+              content: `You are a title generator. Create a short, concise title (max 5 words) that summarizes the main topic or intent of the user's message. 
+
+Rules:
+- Keep it under 5 words
+- Use Indonesian language
+- Be specific and descriptive
+- Don't use punctuation at the end
+- Return ONLY the title, no quotes or extra text
+
+Examples:
+Input: "Bagaimana cara membuat REST API dengan Express.js?"
+Output: Membuat REST API Express
+
+Input: "Tolong buatkan daftar belanja untuk minggu ini"
+Output: Daftar Belanja Mingguan
+
+Input: "1. Belajar JavaScript\n2. Olahraga pagi\n3. Baca buku"
+Output: Target Harian Produktif`,
+            },
+            {
+              role: "user",
+              content: msg,
+            },
+          ],
+        }),
+      },
+    );
+
+    const data = await response.json();
+    const title = data.choices[0].message.content.trim();
+
+    if (!title || title.length > 50) {
+      return msg.substring(0, 30).trim() + (msg.length > 30 ? "..." : "");
+    }
+
+    return title;
+  } catch (error) {
+    console.error("Error in generateTitleFromLLM:", error);
+
+    return msg.substring(0, 30).trim() + (msg.length > 30 ? "..." : "");
+  }
+};
+
+const generateBotResponse = async (userMessage, conversationHistory = []) => {
+  try {
+    const apikey = process.env.OPENROUTER_API_KEY;
+
+    const messages = [
+      {
+        role: "system",
+        content: `Anda adalah asisten notes yang cerdas dan membantu. Anda membantu user mengelola berbagai jenis catatan:
+
+**CATEGORIES & RESPONSE STYLE:**
+
+1. **target_harian** (To-do lists, daily tasks, checklists):
+   - Respond dengan motivasi dan tips produktivitas
+   - Sarankan prioritas atau cara mengorganisir tasks
+   - Gunakan format checklist (- [ ]) untuk actionable items
+   - Tanyakan detail atau deadline jika perlu
+   - Contoh: "Bagus! Saya sudah mencatat target harian kamu. Mana yang paling prioritas untuk hari ini?"
+
+2. **ide** (Ideas, brainstorming, concepts):
+   - Respond dengan eksplorasi ide lebih lanjut
+   - Berikan pertanyaan untuk memperdalam ide
+   - Sarankan langkah implementasi
+   - Gunakan bullet points (-) untuk list ide
+   - Contoh: "Ide menarik! Untuk fitur login ini, sudah kepikiran mau pakai JWT atau session-based authentication?"
+
+3. **kode** (Programming code):
+   - Respond dengan analisis teknis
+   - Jelaskan apa yang code lakukan
+   - Tunjukkan error atau improvement jika ada
+   - Sarankan best practices
+   - Gunakan code blocks dengan syntax highlighting
+   - Contoh: "Code JavaScript-nya sudah bagus. Saya lihat ada potential error di line 3..."
+
+4. **catatan** (Meeting notes, documentation):
+   - Respond dengan ringkasan atau poin penting
+   - Sarankan struktur yang lebih baik jika perlu
+   - Tanyakan apakah ada action items yang perlu difollow-up
+   - Gunakan numbered list (1. 2. 3.) untuk sequential steps
+   - Contoh: "Oke, sudah saya catat. Dari meeting ini ada 3 action items yang perlu difollow-up..."
+
+5. **lainnya** (General):
+   - Respond sesuai konteks
+   - Tawarkan bantuan spesifik
+   - Adaptif terhadap kebutuhan user
+
+**FORMATTING RULES:**
+- Gunakan Markdown formatting
+- Gunakan - [ ] untuk tasks yang bisa diceklis
+- Gunakan - untuk bullet points (ideas, features)
+- Gunakan 1. 2. 3. untuk sequential steps
+- Gunakan \`code\` untuk inline code
+- Gunakan \`\`\`language untuk code blocks
+
+**TONE:**
+- Ramah dan supportif
+- Bahasa Indonesia yang natural
+- Singkat tapi informatif
+- Proaktif memberikan saran
+
+**IMPORTANT:**
+- ALWAYS respond in Indonesian
+- Be concise but helpful
+- Ask clarifying questions when needed
+- Provide actionable suggestions`,
+      },
+    ];
+
+    const recentHistory = conversationHistory.slice(-10);
+    messages.push(...recentHistory);
+
+    messages.push({
+      role: "user",
+      content: userMessage,
+    });
+
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + apikey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-4o-mini",
+          max_tokens: 1000,
+          temperature: 0.7,
+          messages: messages,
+        }),
+      },
+    );
+
+    const data = await response.json();
+    const botResponse = data.choices[0].message.content.trim();
+
+    return botResponse;
+  } catch (error) {
+    console.error("Error in generateBotResponse:", error);
+
+    return "Maaf, saya sedang mengalami kendala. Tapi catatan kamu sudah tersimpan dengan aman! 📝";
+  }
+};
+
 module.exports = {
   analyzingNotesWithLLM,
+  generateTitleFromLLM,
+  generateBotResponse,
 };
