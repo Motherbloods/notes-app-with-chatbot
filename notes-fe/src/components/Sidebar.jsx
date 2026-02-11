@@ -4,28 +4,43 @@ import {
     MessageSquare
 } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import categories from "../config/categories";
 
 function Sidebar({ notesCount }) {
     const [searchInput, setSearchInput] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const navigate = useNavigate();
     const location = useLocation();
 
     useEffect(() => {
         if (!location.pathname.startsWith('/search')) {
             setSearchInput("");
+            setDebouncedSearch("");
         }
     }, [location.pathname]);
 
     useEffect(() => {
-        if (!searchInput.trim()) return;
-
         const timer = setTimeout(() => {
-            navigate(`/search?q=${encodeURIComponent(searchInput)}`);
+            setDebouncedSearch(searchInput);
         }, 500);
-
         return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    useEffect(() => {
+        const trimmed = debouncedSearch.trim();
+
+        if (trimmed) {
+            navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+        } else if (location.pathname.startsWith('/search')) {
+            navigate('/notes/new');
+        }
+    }, [debouncedSearch, navigate, location.pathname]);
+
+    const handleSearchKeyDown = useCallback((e) => {
+        if (e.key === "Enter" && searchInput.trim()) {
+            navigate(`/search?q=${encodeURIComponent(searchInput)}&mode=semantic`);
+        }
     }, [searchInput, navigate]);
 
     return (
@@ -50,7 +65,13 @@ function Sidebar({ notesCount }) {
                 <SearchBar
                     keyword={searchInput}
                     onChange={setSearchInput}
+                    onKeyDown={handleSearchKeyDown}
                 />
+                {searchInput && (
+                    <p className="text-xs text-gray-500 mt-1 px-1">
+                        Press Enter for AI search
+                    </p>
+                )}
             </div>
 
             <div className="space-y-1">
@@ -93,4 +114,4 @@ function Sidebar({ notesCount }) {
     );
 }
 
-export default Sidebar; 
+export default Sidebar;
