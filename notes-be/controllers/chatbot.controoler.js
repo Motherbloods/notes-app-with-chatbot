@@ -6,7 +6,13 @@ const {
 const sendMessage = async (req, res) => {
   try {
     const { conversationId, role, content } = req.body;
-    const result = await sendMessageService({ conversationId, role, content });
+    const userId = "motherbloodss";
+    const result = await sendMessageService({
+      conversationId,
+      role,
+      content,
+      userId,
+    });
     res.status(200).json(result);
   } catch (e) {
     console.error(e);

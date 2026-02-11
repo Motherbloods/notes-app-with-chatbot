@@ -334,14 +334,110 @@ Output: Target Harian Produktif`,
   }
 };
 
-const generateBotResponse = async (userMessage, conversationHistory = []) => {
+/**
+ * NEW FUNCTION: Prepare notes context for chatbot
+ * Extracts relevant information from user's notes history
+ */
+const prepareNotesContext = (allNotes, limit = 20) => {
+  try {
+    // Sort by most recent first
+    const sortedNotes = [...allNotes]
+      .filter((note) => !note.deletedAt)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, limit);
+
+    // Categorize notes
+    const categorizedNotes = {
+      target_harian: [],
+      ide: [],
+      kode: [],
+      catatan: [],
+      lainnya: [],
+    };
+
+    // Extract checklist items status
+    const todoItems = {
+      completed: [],
+      pending: [],
+    };
+
+    sortedNotes.forEach((note) => {
+      const category = note.category || "lainnya";
+      const noteData = {
+        id: note._id,
+        content: note.content,
+        createdAt: note.createdAt,
+        category: note.category,
+      };
+
+      categorizedNotes[category].push(noteData);
+
+      // Extract checklist items
+      if (note.content) {
+        const lines = note.content.split("\n");
+        lines.forEach((line) => {
+          if (line.trim().startsWith("- [x]")) {
+            todoItems.completed.push({
+              task: line.replace("- [x]", "").trim(),
+              completedAt: note.updatedAt,
+              noteId: note._id,
+            });
+          } else if (line.trim().startsWith("- [ ]")) {
+            todoItems.pending.push({
+              task: line.replace("- [ ]", "").trim(),
+              createdAt: note.createdAt,
+              noteId: note._id,
+            });
+          }
+        });
+      }
+    });
+
+    return {
+      totalNotes: sortedNotes.length,
+      categorizedNotes,
+      todoItems,
+      recentNotes: sortedNotes.slice(0, 5), // Last 5 notes
+      lastActivity: sortedNotes[0]?.createdAt || null,
+    };
+  } catch (error) {
+    console.error("Error in prepareNotesContext:", error);
+    return {
+      totalNotes: 0,
+      categorizedNotes: {},
+      todoItems: { completed: [], pending: [] },
+      recentNotes: [],
+      lastActivity: null,
+    };
+  }
+};
+
+/**
+ * ENHANCED: Generate bot response with notes context
+ * Now can answer questions about user's notes history
+ */
+const generateBotResponse = async (
+  userMessage,
+  conversationHistory = [],
+  allNotes = [],
+) => {
   try {
     const apikey = process.env.OPENROUTER_API_KEY;
+
+    // Prepare notes context
+    const notesContext = prepareNotesContext(allNotes);
 
     const messages = [
       {
         role: "system",
-        content: `Anda adalah asisten notes yang cerdas dan membantu. Anda membantu user mengelola berbagai jenis catatan:
+        content: `Anda adalah asisten notes yang cerdas dan membantu. Anda membantu user mengelola berbagai jenis catatan dan dapat menjawab pertanyaan tentang riwayat notes mereka.
+
+**NOTES CONTEXT AVAILABLE:**
+Anda memiliki akses ke data notes user:
+- Total notes: ${notesContext.totalNotes}
+- Completed tasks: ${notesContext.todoItems.completed.length}
+- Pending tasks: ${notesContext.todoItems.pending.length}
+- Last activity: ${notesContext.lastActivity ? new Date(notesContext.lastActivity).toLocaleString("id-ID") : "N/A"}
 
 **CATEGORIES & RESPONSE STYLE:**
 
@@ -379,6 +475,19 @@ const generateBotResponse = async (userMessage, conversationHistory = []) => {
    - Tawarkan bantuan spesifik
    - Adaptif terhadap kebutuhan user
 
+**ANSWERING QUESTIONS ABOUT NOTES:**
+User dapat bertanya tentang notes mereka, seperti:
+- "Saya terakhir ngerjain apa?" → Lihat recent notes
+- "Tugas apa yang belum selesai?" → Lihat pending tasks
+- "Terakhir saya sudah menyelesaikan apa?" → Lihat completed tasks
+- "Saya pengen beli apa?" → Cari dalam notes yang mengandung kata "beli"
+
+Ketika menjawab pertanyaan ini:
+1. Analisis notes context yang tersedia
+2. Berikan jawaban yang spesifik dan relevan
+3. Sebutkan tanggal/waktu jika relevan
+4. Tawarkan untuk memberikan detail lebih lanjut
+
 **FORMATTING RULES:**
 - Gunakan Markdown formatting
 - Gunakan - [ ] untuk tasks yang bisa diceklis
@@ -397,12 +506,71 @@ const generateBotResponse = async (userMessage, conversationHistory = []) => {
 - ALWAYS respond in Indonesian
 - Be concise but helpful
 - Ask clarifying questions when needed
-- Provide actionable suggestions`,
+- Provide actionable suggestions
+- Use the notes context to give personalized responses`,
       },
     ];
 
     const recentHistory = conversationHistory.slice(-10);
     messages.push(...recentHistory);
+
+    // Add notes context as a system message if user is asking about their notes
+    const questionKeywords = [
+      "terakhir",
+      "belum",
+      "selesai",
+      "ngerjain",
+      "beli",
+      "tugas",
+      "target",
+      "kerjaan",
+      "todo",
+      "sudah",
+    ];
+    const isAskingAboutNotes = questionKeywords.some((keyword) =>
+      userMessage.toLowerCase().includes(keyword),
+    );
+
+    if (isAskingAboutNotes) {
+      messages.push({
+        role: "system",
+        content: `CONTEXT DATA - Recent Notes:
+
+**5 Notes Terbaru:**
+${notesContext.recentNotes
+  .map(
+    (note, i) => `
+${i + 1}. [${note.category}] - ${new Date(note.createdAt).toLocaleString("id-ID")}
+${note.content.substring(0, 150)}${note.content.length > 150 ? "..." : ""}
+`,
+  )
+  .join("\n")}
+
+**Tugas Yang Belum Selesai (${notesContext.todoItems.pending.length}):**
+${
+  notesContext.todoItems.pending
+    .slice(0, 10)
+    .map(
+      (item, i) => `
+${i + 1}. ${item.task} (dibuat ${new Date(item.createdAt).toLocaleString("id-ID")})`,
+    )
+    .join("\n") || "Tidak ada tugas pending"
+}
+
+**Tugas Yang Sudah Selesai (${notesContext.todoItems.completed.length}):**
+${
+  notesContext.todoItems.completed
+    .slice(0, 5)
+    .map(
+      (item, i) => `
+${i + 1}. ${item.task} (selesai ${new Date(item.completedAt).toLocaleString("id-ID")})`,
+    )
+    .join("\n") || "Belum ada tugas yang selesai"
+}
+
+Gunakan informasi ini untuk menjawab pertanyaan user dengan spesifik dan akurat.`,
+      });
+    }
 
     messages.push({
       role: "user",
@@ -419,7 +587,7 @@ const generateBotResponse = async (userMessage, conversationHistory = []) => {
         },
         body: JSON.stringify({
           model: "openai/gpt-4o-mini",
-          max_tokens: 1000,
+          max_tokens: 1500,
           temperature: 0.7,
           messages: messages,
         }),
@@ -441,4 +609,5 @@ module.exports = {
   analyzingNotesWithLLM,
   generateTitleFromLLM,
   generateBotResponse,
+  prepareNotesContext, // Export the new helper function
 };

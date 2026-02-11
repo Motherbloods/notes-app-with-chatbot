@@ -1,5 +1,6 @@
 const Message = require("../models/messages");
 const Conversations = require("../models/conversations");
+const Note = require("../models/notes");
 const {
   generateTitleFromLLM,
   generateBotResponse,
@@ -22,7 +23,12 @@ const getConversationHistory = async (conversationId) => {
   }
 };
 
-const sendMessageService = async ({ conversationId, role, content }) => {
+const sendMessageService = async ({
+  conversationId,
+  role,
+  content,
+  userId = "motherbloodss",
+}) => {
   try {
     let conversation;
 
@@ -33,6 +39,7 @@ const sendMessageService = async ({ conversationId, role, content }) => {
       conversation = new Conversations();
       const title = await generateTitleFromLLM(content);
       conversation.title = title;
+      conversation.userId = userId;
 
       await conversation.save();
     }
@@ -52,7 +59,17 @@ const sendMessageService = async ({ conversationId, role, content }) => {
     if (role === "user") {
       const history = await getConversationHistory(conversation._id);
 
-      const botContent = await generateBotResponse(content, history);
+      const allNotes = await Note.find({
+        userId: userId,
+        deletedAt: null,
+      })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean();
+
+      console.log(`[ChatBot] Fetched ${allNotes.length} notes for context`);
+
+      const botContent = await generateBotResponse(content, history, allNotes);
 
       botMessage = new Message({
         conversationId: conversation._id,
