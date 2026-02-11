@@ -7,7 +7,7 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import useScrollToBottom from "../hooks/useScrollToBottom";
 import ScrollToBottomButton from "../components/ScrollToBottomButton";
 import ListChat from "../components/ListChat";
-import dummyMessages from "../config/dummyMessages";
+import { getConversations, sendMessage, getMessages } from "../api/analyzing";
 
 function ChatBot() {
     const {
@@ -19,21 +19,24 @@ function ChatBot() {
     } = useScrollToBottom();
 
     const [chatMessages, setChatMessages] = useState([]);
+    const [conversations, setConversations] = useState([]);
     const [isChatLoading, setIsChatLoading] = useState(false);
     const [chatInput, setChatInput] = useState("");
     const [activeChatId, setActiveChatId] = useState(null);
 
-    const handleSelectChat = (chatId) => {
+    const handleSelectChat = async (chatId) => {
         if (chatId === activeChatId) return;
-
         if (isChatLoading) return;
 
         setActiveChatId(chatId);
-        console.log("Selected chat ID:", chatId);
-        if (chatId == 1) {
-            setChatMessages(dummyMessages[1]);
-        } else {
-            setChatMessages(dummyMessages.default);
+        setChatMessages([]); // Clear messages while loading
+
+        try {
+            const messages = await getMessages(chatId);
+            setChatMessages(messages);
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+            setChatMessages([]);
         }
     };
 
@@ -43,36 +46,58 @@ function ChatBot() {
         const userMessage = {
             role: "user",
             content: chatInput.trim(),
+            conversationId: activeChatId
         };
 
-        setChatMessages((prev) => [...prev, userMessage]);
         setChatInput("");
+        setChatMessages((prev) => [...prev, userMessage]);
         setIsChatLoading(true);
 
-        // simulasi delay bot (misal 1.2 detik)
-        setTimeout(() => {
-            const botMessage = {
-                role: "assistant",
-                content:
-                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " +
-                    "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-            };
-
+        try {
+            const msg = await sendMessage(userMessage);
+            console.log(msg)
+            const { botMessage, conversation } = msg
             setChatMessages((prev) => [...prev, botMessage]);
+            setConversations(prev => {
+                const exist = prev.find(c => c._id === conversation._id)
+
+                if (exist) {
+                    return prev.map(c => c._id === conversation._id ? conversation : c)
+                } else {
+                    return [conversation, ...prev];
+                }
+            })
+        } catch (error) {
+            console.error(error);
+            setChatMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: "Terjadi kesalahan 😢" },
+            ]);
+        } finally {
             setIsChatLoading(false);
-        }, 200);
+        }
     };
 
-
     useEffect(() => {
-        const el = chatContainerRef.current;
-        if (!el) return;
+        let isMounted = true;
 
-        const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-        if (isNearBottom) {
-            scrollToBottom();
-        }
-    }, [chatMessages, isChatLoading]);
+        const fetchConversations = async () => {
+            try {
+                const data = await getConversations();
+                if (isMounted) {
+                    setConversations(data);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        };
+
+        fetchConversations();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     return (
         <div className="h-full flex flex-row">
@@ -135,7 +160,6 @@ function ChatBot() {
                                         {msg.content}
                                     </ReactMarkdown>
                                 </div>
-
                             </div>
                         ))
                     )}
@@ -151,9 +175,7 @@ function ChatBot() {
                         onClick={() => scrollToBottom()}
                     />
 
-
                     <div ref={bottomRef} />
-
                 </div>
                 <div className="p-4 border-t border-gray-200 bg-white">
                     <div className="flex gap-2 items-center">
@@ -161,7 +183,9 @@ function ChatBot() {
                             type="text"
                             value={chatInput}
                             onChange={(e) => setChatInput(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && !isChatLoading && sendChatMessage()}
+                            onKeyDown={(e) =>
+                                e.key === "Enter" && !isChatLoading && sendChatMessage()
+                            }
                             placeholder="Tanya sesuatu..."
                             disabled={isChatLoading}
                             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg 
@@ -182,12 +206,12 @@ function ChatBot() {
                     </div>
                 </div>
             </div>
-            <div className="border-l overflow-y-auto border-gray-200 bg-white">
+            <div className="w-[30%] h-full flex flex-col border-l border-gray-200 bg-white">
                 <ListChat
+                    conversations={conversations}
                     activeChatId={activeChatId}
                     onSelectChat={handleSelectChat}
                 />
-
             </div>
         </div>
     );
