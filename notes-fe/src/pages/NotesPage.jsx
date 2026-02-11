@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import categories from "../config/categories";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import ArchivedNotice from "../components/Notes/ArchivedNotice";
 import NotesList from "../components/Notes/NotesList";
 import { deleteNoteById, getNotesByCategory, updateNote } from "../api/notes";
@@ -13,6 +13,11 @@ import toast from "react-hot-toast";
 function NotesPage() {
     const { decrementCounter, incrementCounter } = useNotes();
     const { categoryKey } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    const highlightId = location.state?.highlightId;
+
     const [notes, setNotes] = useState([]);
     const [dateFilter, setDateFilter] = useState("all");
     const [customDate, setCustomDate] = useState("");
@@ -30,10 +35,35 @@ function NotesPage() {
             } catch (error) {
                 console.error("Error fetching notes:", error);
             }
-
         }
         fetchNotes()
     }, [category]);
+
+    useEffect(() => {
+        if (highlightId && notes.length > 0) {
+            const timer = setTimeout(() => {
+                const element = document.getElementById(`note-${highlightId}`);
+                if (element) {
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }, 100);
+
+            return () => clearTimeout(timer);
+        }
+    }, [highlightId, notes]);
+
+    useEffect(() => {
+        if (highlightId) {
+            const timer = setTimeout(() => {
+                navigate(location.pathname, { replace: true, state: {} });
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [highlightId, navigate, location.pathname]);
 
     if (!categories[category]) {
         return <p>Halaman tidak ditemukan</p>;
@@ -78,7 +108,7 @@ function NotesPage() {
             let currentChecklistIndex = 0;
 
             const updatedLines = lines.map(line => {
-                const checklistMatch = line.match(/^([-•*â€¢]?\s*)\[([ xX])\]\s*(.+)$/);
+                const checklistMatch = line.match(/^([-•*•]?\s*)\[([ xX])\]\s*(.+)$/);
 
                 if (checklistMatch) {
                     if (currentChecklistIndex === checklistIndex) {
@@ -211,7 +241,7 @@ function NotesPage() {
 
             <ArchivedNotice notes={archivedNotes} />
 
-            <NotesList notes={filteredNotes} toggleChecklistItem={toggleChecklistItem} onDelete={setNoteToDelete} onSelectNote={setSelectedNote} onPinned={handleEditNote} />
+            <NotesList notes={filteredNotes} toggleChecklistItem={toggleChecklistItem} onDelete={setNoteToDelete} onSelectNote={setSelectedNote} onPinned={handleEditNote} highlightId={highlightId} />
             {noteToDelete && (
                 <ConfirmModal
                     message="Yakin mau hapus catatan ini?"

@@ -8,9 +8,11 @@ export default function NotesList({
     onDelete,
     onSelectNote,
     onPinned,
+    highlightId,
 }) {
     const containerRef = useRef(null);
     const previousNotesOrder = useRef([]);
+    const highlightRef = useRef(null);
 
     const sortedNotes = useMemo(() => {
         if (!notes) return [];
@@ -33,13 +35,24 @@ export default function NotesList({
         if (currentOrder !== previousOrder && previousOrder.length > 0) {
             const firstNoteChanged = sortedNotes[0]?._id !== previousNotesOrder.current[0];
 
-            if (firstNoteChanged && containerRef.current) {
+            if (firstNoteChanged && containerRef.current && !highlightId) {
                 containerRef.current.scrollTop = 0;
             }
         }
 
         previousNotesOrder.current = sortedNotes.map(n => n._id);
-    }, [sortedNotes]);
+    }, [sortedNotes, highlightId]);
+
+    useEffect(() => {
+        if (highlightId && highlightRef.current) {
+            setTimeout(() => {
+                highlightRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }, 100);
+        }
+    }, [highlightId]);
 
     if (!sortedNotes.length) {
         return (
@@ -56,30 +69,35 @@ export default function NotesList({
             style={{ scrollBehavior: 'auto' }}
         >
             <LayoutGroup>
-                <motion.div className="space-y-4">
+                <motion.div className="space-y-4 pb-8">
                     <AnimatePresence mode="popLayout">
-                        {sortedNotes.map((note) => (
-                            <motion.div
-                                key={note._id}
-                                layout
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            >
+                        {sortedNotes.map((note) => {
+                            const isHighlighted = highlightId === note._id;
+                            return (
+                                <motion.div
+                                    id={`note-${note._id}`}
+                                    key={note._id}
+                                    ref={isHighlighted ? highlightRef : null}
+                                    layout
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                >
 
-                                <NoteCard
-                                    note={note}
-                                    toggleChecklistItem={toggleChecklistItem}
-                                    onDelete={onDelete}
-                                    onSelectNote={onSelectNote}
-                                    onPinned={onPinned}
-                                />
-                            </motion.div>
-                        ))}
+                                    <NoteCard
+                                        note={note}
+                                        toggleChecklistItem={toggleChecklistItem}
+                                        onDelete={onDelete}
+                                        onSelectNote={onSelectNote}
+                                        onPinned={onPinned}
+                                        isHighlighted={isHighlighted}
+                                    />
+                                </motion.div>);
+                        })}
                     </AnimatePresence>
                 </motion.div>
-            </LayoutGroup>
-        </div>
+            </LayoutGroup >
+        </div >
     );
 }

@@ -2,12 +2,16 @@ import React from "react";
 import { Code2, AlertTriangle, Trash2, Pin } from "lucide-react";
 import renderFormattedContent from "./renderFormattedContent";
 
-export default function NoteCard({ note, toggleChecklistItem, onDelete, onSelectNote, onPinned }) {
+export default function NoteCard({ note, toggleChecklistItem, onDelete, onSelectNote, onPinned, isHighlighted }) {
 
     return (
         <div
-            className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm
-             hover:shadow-lg hover:-translate-y-1 transition transform duration-200 cursor-pointer"
+            className={`bg-white p-4 rounded-lg border shadow-sm
+             hover:shadow-lg hover:-translate-y-1 transition-all transform duration-200 cursor-pointer
+             ${isHighlighted
+                    ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50 shadow-xl'
+                    : 'border-gray-200'
+                }`}
             onClick={(e) => { e.stopPropagation(); onSelectNote(note) }}
         >
 

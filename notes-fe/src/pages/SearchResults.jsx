@@ -1,12 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
-import {
-    Search,
-    ArrowLeft,
-    Loader2,
-    Sparkles,
-    Layers
-} from "lucide-react";
+import { Search, ArrowLeft, Loader2, Sparkles, Layers } from "lucide-react";
 
 import categories from "../config/categories";
 import { searchNotes } from "../api/search";
@@ -48,6 +42,13 @@ function SearchResults() {
 
     const switchMode = (newMode) => {
         navigate(`/search?q=${encodeURIComponent(query)}&mode=${newMode}`);
+    };
+
+    const handleNoteClick = (note) => {
+        navigate(`/notes/${note.category}`, {
+            state: { highlightId: note._id },
+            replace: false
+        });
     };
 
     return (
@@ -149,10 +150,10 @@ function SearchResults() {
                             const Icon = category?.icon;
 
                             return (
-                                <Link
+                                <div
                                     key={note._id}
-                                    to={`/notes/${note._id}`}
-                                    className="block p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-blue-300 transition"
+                                    onClick={() => handleNoteClick(note)}
+                                    className="block p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-blue-300 transition cursor-pointer"
                                 >
                                     <div className="flex items-start justify-between mb-2">
                                         <h3 className="text-lg font-semibold text-gray-900 flex-1">
@@ -188,7 +189,7 @@ function SearchResults() {
                                             ).toLocaleDateString()}
                                         </span>
                                     </div>
-                                </Link>
+                                </div>
                             );
                         })}
                     </div>

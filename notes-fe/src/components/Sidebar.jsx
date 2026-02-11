@@ -4,7 +4,7 @@ import {
     MessageSquare
 } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import categories from "../config/categories";
 
 function Sidebar({ notesCount }) {
@@ -12,13 +12,19 @@ function Sidebar({ notesCount }) {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const navigate = useNavigate();
     const location = useLocation();
+    const isNavigatingToNote = useRef(false);
 
     useEffect(() => {
-        if (!location.pathname.startsWith('/search')) {
+        if (!location.pathname.startsWith('/search') && !location.state?.highlightId) {
             setSearchInput("");
             setDebouncedSearch("");
+            isNavigatingToNote.current = false;
         }
-    }, [location.pathname]);
+
+        if (location.state?.highlightId) {
+            isNavigatingToNote.current = true;
+        }
+    }, [location.pathname, location.state?.highlightId]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -28,14 +34,21 @@ function Sidebar({ notesCount }) {
     }, [searchInput]);
 
     useEffect(() => {
+        if (isNavigatingToNote.current) {
+            return;
+        }
+
         const trimmed = debouncedSearch.trim();
 
         if (trimmed) {
-            navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+            const currentQuery = new URLSearchParams(location.search).get('q');
+            if (location.pathname !== '/search' || currentQuery !== trimmed) {
+                navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+            }
         } else if (location.pathname.startsWith('/search')) {
             navigate('/notes/new');
         }
-    }, [debouncedSearch, navigate, location.pathname]);
+    }, [debouncedSearch, navigate, location.pathname, location.search]);
 
     const handleSearchKeyDown = useCallback((e) => {
         if (e.key === "Enter" && searchInput.trim()) {
