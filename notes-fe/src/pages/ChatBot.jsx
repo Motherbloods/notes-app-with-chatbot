@@ -99,6 +99,10 @@ function ChatBot() {
         };
     }, []);
 
+    useEffect(() => {
+        scrollToBottom();
+    }, [chatMessages, isChatLoading, scrollToBottom]);
+
     return (
         <div className="h-full flex flex-row">
             <div className=" h-full w-[70%] flex flex-col">

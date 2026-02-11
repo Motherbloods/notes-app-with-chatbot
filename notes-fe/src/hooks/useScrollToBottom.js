@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 
 function useScrollToBottom() {
   const bottomRef = useRef(null);
@@ -14,9 +14,10 @@ function useScrollToBottom() {
     setShowScrollDown(!isAtBottom);
   };
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
+
   return {
     chatContainerRef,
     bottomRef,
