@@ -1,39 +1,24 @@
 
 function ListChat({ conversations = [], activeChatId, onSelectChat }) {
-    conversations = [
-        {
-            id: "1",
-            title: "Scroll to bottom React",
-            lastMessage: "Gimana cara bikin scroll otomatis ke bawah?",
-            updatedAt: "2026-02-05T10:30:00Z",
-        },
-        {
-            id: "2",
-            title: "useRef dan useEffect",
-            lastMessage: "Kapan pakai useRef dibanding useState?",
-            updatedAt: "2026-02-04T15:12:00Z",
-        },
-        {
-            id: "3",
-            title: "Layout h-screen problem",
-            lastMessage: "Kenapa h-screen di parent dan child bentrok?",
-            updatedAt: "2026-02-03T09:45:00Z",
-        },
-        {
-            id: "4",
-            title: "Second Brain Notes",
-            lastMessage: "Cari catatan tentang sendMessage",
-            updatedAt: "2026-02-02T20:10:00Z",
-        },
-    ];
+
+    if (!conversations.length) {
+        return (
+            <div className="flex-1 flex text-center items-center justify-center">
+                <p className="text-gray-400 text-center">
+                    Belum ada percakapan
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className="flex-1 overflow-y-auto">
             {conversations.map((chat) => (
                 <div
-                    key={chat.id}
-                    onClick={() => onSelectChat(chat.id)}
+                    key={chat._id}
+                    onClick={() => onSelectChat(chat._id)}
                     className={`px-4 py-3 cursor-pointer transition
-            ${activeChatId === chat.id
+            ${activeChatId === chat._id
                             ? "bg-gray-200"
                             : "hover:bg-gray-100"
                         }
@@ -45,6 +30,7 @@ function ListChat({ conversations = [], activeChatId, onSelectChat }) {
                     </p>
                 </div>
             ))}
+
         </div>
     );
 }
