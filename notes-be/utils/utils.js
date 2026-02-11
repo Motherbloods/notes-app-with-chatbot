@@ -20,6 +20,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", analyzingRoutes);
 app.use("/api", notesRoutes);
 app.use("/api", embeddingRoutes);
-// app.use("/api", chatRoutes);
+app.use("/api", chatRoutes);
 
 module.exports = app;
