@@ -36,19 +36,185 @@ const generateEmbedding = async (note) => {
     throw e;
   }
 };
-const searchLiveNotesService = async (query) => {
+const cosineSimilarity = (vecA, vecB) => {
+  if (vecA.length !== vecB.length) {
+    throw new Error("Vectors must have the same length");
+  }
+
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+
+  normA = Math.sqrt(normA);
+  normB = Math.sqrt(normB);
+
+  if (normA === 0 || normB === 0) {
+    return 0;
+  }
+
+  return dotProduct / (normA * normB);
+};
+
+const searchSemanticNotesService = async (
+  query,
+  notes,
+  topK = 5,
+  minSimilarity = 0.5,
+) => {
   try {
-    if (!query) return [];
+    console.log("Query:", query);
+    console.log("Total notes:", notes.length);
 
-    const regex = new RegExp(query, "i");
-    const result = await Note.find({ content: regex });
-    console.log("ini result DB", result);
+    const embedding = await generateEmbedding(query);
+    const queryEmbedding = embedding.data[0].embedding;
 
-    return result;
-  } catch (e) {
-    console.error("Search service error:", e);
-    return [];
+    console.log("Query embedding length:", queryEmbedding.length);
+
+    const resultsWithSimilarity = notes
+      .filter((note) => {
+        const valid =
+          note.embedding &&
+          Array.isArray(note.embedding) &&
+          note.embedding.length > 0;
+
+        if (!valid) {
+          console.log("Invalid embedding for note:", note._id);
+        }
+
+        return valid;
+      })
+      .map((note) => {
+        if (note.embedding.length !== queryEmbedding.length) {
+          console.log("Dimension mismatch:", {
+            noteId: note._id,
+            noteEmbeddingLength: note.embedding.length,
+            queryEmbeddingLength: queryEmbedding.length,
+          });
+        }
+
+        const similarity = cosineSimilarity(queryEmbedding, note.embedding);
+        console.log("Similarity raw:", {
+          id: note._id,
+          similarity,
+        });
+        return {
+          ...(note.toObject ? note.toObject() : note),
+          similarity,
+        };
+      })
+      .filter((note) => note.similarity >= minSimilarity)
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, topK);
+
+    console.log("Final results:", resultsWithSimilarity.length);
+
+    return resultsWithSimilarity;
+  } catch (error) {
+    console.error("Error in semantic search:", error);
+    throw error;
   }
 };
 
-module.exports = { generateEmbedding, searchLiveNotesService };
+const searchHybridNotesService = async (
+  query,
+  keywordResults,
+  allNotes,
+  topK = 10,
+) => {
+  try {
+    console.log("🔎 HYBRID SEARCH DEBUG");
+    console.log("Query:", query);
+    console.log("Keyword results:", keywordResults.length);
+    console.log("Total notes (semantic pool):", allNotes.length);
+
+    const semanticResults = await searchSemanticNotesService(
+      query,
+      allNotes,
+      topK * 2,
+    );
+
+    console.log("Semantic results:", semanticResults.length);
+
+    const combinedMap = new Map();
+
+    // ===== KEYWORD PHASE =====
+    keywordResults.forEach((note) => {
+      const id = note._id.toString();
+
+      combinedMap.set(id, {
+        ...(note.toObject ? note.toObject() : note),
+        score: 1.0,
+        matchType: "keyword",
+      });
+    });
+
+    console.log("After keyword phase:", combinedMap.size);
+
+    // ===== SEMANTIC PHASE =====
+    semanticResults.forEach((note) => {
+      const id = note._id.toString();
+
+      if (!note.similarity || isNaN(note.similarity)) {
+        console.log("⚠ Invalid similarity:", id, note.similarity);
+        return;
+      }
+
+      if (combinedMap.has(id)) {
+        const existing = combinedMap.get(id);
+
+        const boostedScore = note.similarity * 1.2;
+
+        console.log("Match BOTH:", {
+          id,
+          similarity: note.similarity,
+          boostedScore,
+        });
+
+        existing.score = Math.max(existing.score, boostedScore);
+        existing.matchType = "both";
+        existing.similarity = note.similarity;
+      } else {
+        console.log("Match SEMANTIC only:", {
+          id,
+          similarity: note.similarity,
+        });
+
+        combinedMap.set(id, {
+          ...note,
+          score: note.similarity,
+          matchType: "semantic",
+        });
+      }
+    });
+
+    const finalResults = Array.from(combinedMap.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK);
+
+    console.log("Final hybrid results:", finalResults.length);
+    console.log(
+      finalResults.map((r) => ({
+        id: r._id,
+        score: r.score,
+        type: r.matchType,
+      })),
+    );
+
+    return finalResults;
+  } catch (error) {
+    console.error("Error in hybrid search:", error);
+    throw error;
+  }
+};
+
+module.exports = {
+  generateEmbedding,
+  searchSemanticNotesService,
+  searchHybridNotesService,
+};
