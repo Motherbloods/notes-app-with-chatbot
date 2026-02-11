@@ -2,5 +2,13 @@ import apiClient from "./index.js";
 
 const client = apiClient();
 
-export const searchLiveNotes = (query) =>
-  client.get("/search", { params: { q: query } });
+export const searchNotes = async (query, mode = "hybrid") => {
+  const response = await client.get("/search", {
+    params: {
+      q: query,
+      mode,
+    },
+  });
+
+  return response;
+};
