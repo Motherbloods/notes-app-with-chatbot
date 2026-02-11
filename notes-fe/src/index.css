@@ -1,1 +1,94 @@
 @import "tailwindcss";
+
+/* Define CSS variables outside @theme */
+:root {
+  /* Light mode colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-tertiary: #f3f4f6;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e7eb;
+  --color-blue: #2563eb;
+  --color-blue-hover: #1d4ed8;
+}
+
+/* Dark mode - system preference */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-primary: #111827;
+    --color-bg-secondary: #1f2937;
+    --color-bg-tertiary: #374151;
+    --color-text-primary: #f3f4f6;
+    --color-text-secondary: #9ca3af;
+    --color-border: #374151;
+    --color-blue: #3b82f6;
+    --color-blue-hover: #60a5fa;
+  }
+}
+
+/* Dark mode - manual toggle with .dark class (override system) */
+.dark {
+  --color-bg-primary: #111827;
+  --color-bg-secondary: #1f2937;
+  --color-bg-tertiary: #374151;
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #9ca3af;
+  --color-border: #374151;
+  --color-blue: #3b82f6;
+  --color-blue-hover: #60a5fa;
+}
+
+/* Light mode - manual toggle with .light class (override system dark) */
+.light {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-tertiary: #f3f4f6;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e7eb;
+  --color-blue: #2563eb;
+  --color-blue-hover: #1d4ed8;
+}
+
+/* Apply to body */
+body {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Optional: Custom utility classes for easier use */
+@layer utilities {
+  .bg-primary {
+    background-color: var(--color-bg-primary);
+  }
+  
+  .bg-secondary {
+    background-color: var(--color-bg-secondary);
+  }
+  
+  .bg-tertiary {
+    background-color: var(--color-bg-tertiary);
+  }
+  
+  .text-primary {
+    color: var(--color-text-primary);
+  }
+  
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+  
+  .border-custom {
+    border-color: var(--color-border);
+  }
+  
+  .btn-primary {
+    background-color: var(--color-blue);
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--color-blue-hover);
+  }
+}
