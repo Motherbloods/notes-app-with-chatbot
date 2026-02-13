@@ -94,9 +94,9 @@ function Notes() {
         }
     };
 
-    return <div className="flex-1 p-8">
-        <h2 className="text-2xl font-bold mb-2 text-gray-800">Paste Anything Here</h2>
-        <p className="text-sm text-gray-500 mb-4">
+    return <div className="flex-1 p-8 bg-primary text-primary">
+        <h2 className="text-2xl font-bold mb-2">Paste Anything Here</h2>
+        <p className="text-sm text-secondary mb-4">
             💡 Tips: Ketik "1. " untuk numbered list, "- " untuk bullet, "- [ ] " untuk checklist
         </p>
         <textarea
@@ -113,24 +113,35 @@ Contoh list:
 Contoh checklist:
 - [ ] Task belum selesai
 - [x] Task selesai"
-            className="w-full h-96 p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-        />
+            className=" w-full h-96 p-4 bg-secondary resize-none border border-primary rounded-xl text-primary font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent placeholder:text-secondary
+      "/>
         <button
             onClick={() => analyzeContent(inputContent)}
             disabled={!inputContent.trim() || isAnalyzing}
-            className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+            className="
+mt-4 px-6 py-3 
+btn-primary
+text-white 
+rounded-xl 
+hover:opacity-90 
+disabled:opacity-50 
+disabled:cursor-not-allowed 
+transition 
+flex items-center gap-2
+"
         >
             {isAnalyzing ? (
                 <>
-                    <Loader2 size={20} className="animate-spin" />
+                    <Loader2 size={20} className="animate-spin text-white" />
                     Analyzing...
                 </>
             ) : (
                 <>
-                    <Save size={20} />
+                    <Save size={20} className="text-white" />
                     Analisis
                 </>
             )}
+
         </button>
         <ModalPreview
             isOpen={showConfirmation}

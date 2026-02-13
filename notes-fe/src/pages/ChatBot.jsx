@@ -104,25 +104,27 @@ function ChatBot() {
     }, [chatMessages, isChatLoading, scrollToBottom]);
 
     return (
-        <div className="h-full flex flex-row">
-            <div className=" h-full w-[70%] flex flex-col">
-                <div className="p-6 border-b border-gray-200 bg-white">
-                    <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <MessageSquare size={28} className="text-pink-500" />
+        <div className="h-full flex flex-row bg-primary text-primary">
+
+            <div className="h-full w-[70%] flex flex-col">
+
+                <div className="p-6 border-b border-primary bg-primary">
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                        <MessageSquare size={28} className="text-accent" />
                         Chat dengan Second Brain
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1">
+
+                    <p className="text-sm text-secondary mt-1">
                         Tanya apapun tentang catatan yang sudah kamu simpan
                     </p>
                 </div>
                 <div
                     ref={chatContainerRef}
                     onScroll={handleScroll}
-                    className="flex-1 overflow-auto p-6 space-y-4 relative"
+                    className="flex-1 overflow-auto p-6 space-y-4 relative bg-secondary"
                 >
                     {chatMessages.length === 0 ? (
-                        <div className="text-center py-12 text-gray-400">
-                            {" "}
+                        <div className="text-center py-12 text-secondary">
                             <p>Mulai chat dengan mengetik pertanyaan</p>
                             <p className="text-sm mt-2">
                                 Contoh: "Tadi aku nyatet tentang sendMessage dimana?"
@@ -132,18 +134,24 @@ function ChatBot() {
                         chatMessages.map((msg, index) => (
                             <div
                                 key={index}
-                                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                                className={`flex ${msg.role === "user"
+                                    ? "justify-end"
+                                    : "justify-start"
+                                    }`}
                             >
                                 <div
-                                    className={`max-w-2xl p-4 rounded-lg ${msg.role === "user"
-                                        ? "bg-blue-600 text-white"
-                                        : "bg-white border border-gray-200"
-                                        }`}
+                                    className={`
+                  max-w-2xl p-4 rounded-xl
+                  ${msg.role === "user"
+                                            ? "bg-accent text-white"
+                                            : "bg-primary border border-primary"
+                                        }
+                `}
                                 >
                                     <ReactMarkdown
                                         remarkPlugins={[remarkGfm]}
                                         components={{
-                                            code({ inline, className, children, ...props }) {
+                                            code({ inline, className, children }) {
                                                 const match = /language-(\w+)/.exec(className || "");
                                                 return !inline && match ? (
                                                     <SyntaxHighlighter
@@ -154,7 +162,7 @@ function ChatBot() {
                                                         {String(children).replace(/\n$/, "")}
                                                     </SyntaxHighlighter>
                                                 ) : (
-                                                    <code className="bg-gray-100 px-1 rounded">
+                                                    <code className="bg-tertiary px-1.5 py-0.5 rounded text-sm">
                                                         {children}
                                                     </code>
                                                 );
@@ -169,8 +177,11 @@ function ChatBot() {
                     )}
                     {isChatLoading && (
                         <div className="flex justify-start">
-                            <div className="bg-white border border-gray-200 p-4 rounded-lg">
-                                <Loader2 size={20} className="animate-spin text-gray-400" />
+                            <div className="bg-primary border border-primary p-4 rounded-lg">
+                                <Loader2
+                                    size={20}
+                                    className="animate-spin text-secondary"
+                                />
                             </div>
                         </div>
                     )}
@@ -181,28 +192,44 @@ function ChatBot() {
 
                     <div ref={bottomRef} />
                 </div>
-                <div className="p-4 border-t border-gray-200 bg-white">
+
+                <div className="p-4 border-t border-primary bg-primary">
                     <div className="flex gap-2 items-center">
                         <input
                             type="text"
                             value={chatInput}
                             onChange={(e) => setChatInput(e.target.value)}
                             onKeyDown={(e) =>
-                                e.key === "Enter" && !isChatLoading && sendChatMessage()
+                                e.key === "Enter" &&
+                                !isChatLoading &&
+                                sendChatMessage()
                             }
                             placeholder="Tanya sesuatu..."
                             disabled={isChatLoading}
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg 
-                 focus:outline-none focus:ring-2 focus:ring-blue-500
-                 disabled:bg-gray-100"
+                            className="
+              flex-1 px-4 py-2
+              bg-secondary
+              border border-primary
+              rounded-lg
+              text-primary
+              focus:outline-none
+              focus:ring-2
+              focus:ring-accent
+              disabled:opacity-50
+            "
                         />
 
                         <button
                             onClick={sendChatMessage}
                             disabled={isChatLoading || !chatInput.trim()}
-                            className="p-2 rounded-lg bg-blue-600 text-white
-                 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
-                 transition"
+                            className="
+              p-2 rounded-lg
+              bg-accent text-white
+              hover:opacity-90
+              disabled:opacity-50
+              disabled:cursor-not-allowed
+              transition
+            "
                             aria-label="Kirim pesan"
                         >
                             <Send size={20} />
@@ -210,7 +237,8 @@ function ChatBot() {
                     </div>
                 </div>
             </div>
-            <div className="w-[30%] h-full flex flex-col border-l border-gray-200 bg-white">
+
+            <div className="w-[30%] h-full flex flex-col border-l border-primary bg-primary">
                 <ListChat
                     conversations={conversations}
                     activeChatId={activeChatId}

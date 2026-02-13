@@ -49,17 +49,19 @@ function EditModal({ onClose, onSave, initialData }) {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+            <div className="bg-secondary text-primary rounded-xl max-w-5xl w-full max-h-[90vh] overflow-auto shadow-lg">
 
-                <div className="p-6 border-b border-gray-200 flex justify-between items-start">
+                <div className="p-6 border-b border-primary flex justify-between items-start">
                     <div>
-                        <h3 className="text-xl font-bold text-gray-800">Edit Catatan</h3>
-                        <p className="text-sm text-gray-500 mt-1">Periksa dan sesuaikan sebelum menyimpan</p>
+                        <h3 className="text-xl font-bold text-primary">Edit Catatan</h3>
+                        <p className="text-sm text-secondary mt-1">
+                            Periksa dan sesuaikan sebelum menyimpan
+                        </p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                        className="text-secondary hover:text-primary disabled:opacity-50"
                         disabled={isSaving}
                     >
                         <X size={24} />
@@ -69,13 +71,13 @@ function EditModal({ onClose, onSave, initialData }) {
                 <div className="p-6 space-y-4">
                     {/* Category Selection */}
                     <div>
-                        <label className="text-sm font-semibold text-gray-700">Kategori:</label>
+                        <label className="text-sm font-semibold text-primary">Kategori:</label>
                         <div className="mt-2">
                             <select
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
                                 disabled={isSaving}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full px-4 py-2 border border-primary rounded-xl bg-secondary text-primary focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <option value="target_harian">📅 Target Harian</option>
                                 <option value="ide">💡 Ide</option>
@@ -84,7 +86,7 @@ function EditModal({ onClose, onSave, initialData }) {
                             </select>
                         </div>
                         {categoryChanged && (
-                            <p className="text-xs text-orange-600 mt-1">
+                            <p className="text-xs text-accent mt-1">
                                 ⚠️ Kategori berubah - catatan akan dianalisis ulang saat disimpan
                             </p>
                         )}
@@ -92,17 +94,20 @@ function EditModal({ onClose, onSave, initialData }) {
 
                     {/* Reanalyze Checkbox for Code */}
                     {isCode && (
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 p-3 bg-secondary border border-accent rounded-xl">
                             <input
                                 type="checkbox"
                                 id="reanalyze"
                                 checked={reanalyze}
                                 onChange={(e) => setReanalyze(e.target.checked)}
                                 disabled={isSaving}
-                                className="w-4 h-4 text-blue-600 rounded disabled:opacity-50"
+                                className="w-4 h-4 text-accent rounded disabled:opacity-50"
                             />
-                            <label htmlFor="reanalyze" className="text-sm text-blue-800 flex items-center gap-2 cursor-pointer">
-                                <RefreshCw size={14} />
+                            <label
+                                htmlFor="reanalyze"
+                                className="text-sm text-primary flex items-center gap-2 cursor-pointer"
+                            >
+                                <RefreshCw size={14} className="text-accent" />
                                 <span>Analisis ulang kode ini untuk mendapatkan saran terbaru</span>
                             </label>
                         </div>
@@ -113,14 +118,14 @@ function EditModal({ onClose, onSave, initialData }) {
                         <div className="space-y-4">
                             <div className="flex items-center gap-4 text-sm">
                                 <div className="flex items-center gap-2">
-                                    <span className="font-semibold">Bahasa:</span>
+                                    <span className="font-semibold text-primary">Bahasa:</span>
                                     <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
                                         {initialData.language || "N/A"}
                                     </span>
                                 </div>
                                 {initialData.confidence && (
                                     <div className="flex items-center gap-2">
-                                        <span className="font-semibold">Confidence:</span>
+                                        <span className="font-semibold text-primary">Confidence:</span>
                                         <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
                                             {Math.round(initialData.confidence * 100)}%
                                         </span>
@@ -130,22 +135,24 @@ function EditModal({ onClose, onSave, initialData }) {
 
                             {/* Analysis Errors */}
                             {initialData.analysisErrors?.length > 0 && (
-                                <div className="border border-orange-200 bg-orange-50 rounded-lg p-4">
-                                    <div className="flex items-center gap-2 text-orange-700 font-semibold mb-3">
-                                        <AlertTriangle size={18} />
+                                <div className="border border-accent bg-secondary rounded-xl p-4">
+                                    <div className="flex items-center gap-2 text-accent font-semibold mb-3">
+                                        <AlertTriangle size={18} className="text-accent" />
                                         <span>{initialData.analysisErrors.length} Issue{initialData.analysisErrors.length > 1 ? 's' : ''} Found</span>
                                     </div>
                                     <div className="space-y-3">
                                         {initialData.analysisErrors.map((err, i) => (
-                                            <div key={i} className="bg-white rounded p-3 border border-orange-200">
+                                            <div key={i} className="bg-white rounded p-3 border border-accent">
                                                 <div className="flex items-start gap-2 mb-2">
                                                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${err.type === 'error' ? 'bg-red-100 text-red-700' :
                                                         err.type === 'warning' ? 'bg-yellow-100 text-yellow-700' :
                                                             'bg-blue-100 text-blue-700'
-                                                        }`}>{err.type}</span>
+                                                        }`}>
+                                                        {err.type}
+                                                    </span>
                                                     <span className="text-xs text-gray-500">Line {err.line}</span>
                                                 </div>
-                                                <p className="text-sm text-gray-700 mb-2">{err.message}</p>
+                                                <p className="text-sm text-primary mb-2">{err.message}</p>
                                                 {err.fix && (
                                                     <div className="mt-2 bg-green-50 border border-green-200 rounded p-2">
                                                         <div className="flex items-center gap-1 text-xs text-green-700 font-medium mb-1">
@@ -174,7 +181,7 @@ function EditModal({ onClose, onSave, initialData }) {
                                 }}
                                 disabled={isSaving}
                                 className={`px-4 py-2.5 text-sm font-medium transition-all disabled:opacity-50 rounded-t-lg ${!showOriginal && !showSuggested
-                                    ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600'
+                                    ? 'text-primary bg-secondary border-b-2 border-primary'
                                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                                     }`}
                             >
@@ -200,7 +207,9 @@ function EditModal({ onClose, onSave, initialData }) {
                                     <div className="flex items-center gap-2">
                                         <FileText size={16} />
                                         Original
-                                        <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">Raw</span>
+                                        <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">
+                                            Raw
+                                        </span>
                                     </div>
                                 </button>
                             )}
@@ -221,7 +230,9 @@ function EditModal({ onClose, onSave, initialData }) {
                                     <div className="flex items-center gap-2">
                                         <Sparkles size={16} />
                                         AI Suggestion
-                                        <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">Fixed</span>
+                                        <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">
+                                            Fixed
+                                        </span>
                                     </div>
                                 </button>
                             )}
@@ -270,8 +281,8 @@ function EditModal({ onClose, onSave, initialData }) {
                             readOnly={showOriginal || showSuggested || isSaving}
                             disabled={isSaving}
                             className={`w-full p-4 border rounded-lg text-sm max-h-96 overflow-auto resize-none
-                                ${isCode ? 'font-mono text-gray-800' : 'text-gray-700'}
-                                ${showOriginal
+      ${isCode ? 'font-mono text-gray-800' : 'text-gray-700'}
+      ${showOriginal
                                     ? 'bg-purple-50 border-purple-300 cursor-default'
                                     : showSuggested
                                         ? 'bg-green-50 border-green-300 cursor-default'

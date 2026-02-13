@@ -2,15 +2,16 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import MainLayout from "./layout/MainLayout.jsx"
 import routes from "./config/routes.jsx"
 import { NotesProvider } from "./context/NotesContext.jsx"
+import { ThemeProvider } from "./context/ThemeContext.jsx"
 
 function App() {
   return (
-    <NotesProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<MainLayout />}>
-            {
-              routes.map((route, index) => {
+    <ThemeProvider>
+      <NotesProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<MainLayout />}>
+              {routes.map((route, index) => {
                 return route.redirectTo ? (
                   <Route
                     key={index}
@@ -23,12 +24,12 @@ function App() {
                     path={route.path}
                     element={route.element} />
                 )
-              })
-            }
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </NotesProvider>
+              })}
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </NotesProvider>
+    </ThemeProvider>
   )
 }
 

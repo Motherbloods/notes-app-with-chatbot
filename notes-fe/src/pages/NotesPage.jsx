@@ -186,7 +186,8 @@ function NotesPage() {
     return (
         <>
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+
+                <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
                     {React.createElement(categories[category].icon, {
                         size: 28,
                         className: categories[category].color
@@ -195,10 +196,22 @@ function NotesPage() {
                 </h2>
 
                 <div className="flex items-center gap-2">
+
                     <select
                         value={dateFilter}
                         onChange={(e) => setDateFilter(e.target.value)}
-                        className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        className="
+            bg-primary
+            text-primary
+            border border-custom
+            rounded-lg
+            px-3 py-2
+            text-sm
+            focus:outline-none
+            focus:ring-2
+            focus:ring-(--color-blue)
+            transition-colors
+          "
                     >
                         <option value="all">Semua</option>
                         <option value="today">Hari Ini</option>
@@ -213,7 +226,18 @@ function NotesPage() {
                             type="date"
                             value={customDate}
                             onChange={(e) => setCustomDate(e.target.value)}
-                            className="border rounded-lg px-3 py-2 text-sm"
+                            className="
+              bg-primary
+              text-primary
+              border border-custom
+              rounded-lg
+              px-3 py-2
+              text-sm
+              focus:outline-none
+              focus:ring-2
+              focus:ring-(--color-blue)
+              transition-colors
+            "
                         />
                     )}
 
@@ -223,25 +247,54 @@ function NotesPage() {
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="border rounded-lg px-3 py-2 text-sm"
+                                className="
+                bg-primary
+                text-primary
+                border border-custom
+                rounded-lg
+                px-3 py-2
+                text-sm
+                focus:outline-none
+                focus:ring-2
+                focus:ring-(--color-blue)
+                transition-colors
+              "
                             />
-                            <span>-</span>
+                            <span className="text-secondary">-</span>
                             <input
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="border rounded-lg px-3 py-2 text-sm"
+                                className="
+                bg-primary
+                text-primary
+                border border-custom
+                rounded-lg
+                px-3 py-2
+                text-sm
+                focus:outline-none
+                focus:ring-2
+                focus:ring-(--color-blue)
+                transition-colors
+              "
                             />
                         </>
                     )}
+
                 </div>
             </div>
 
-
-
             <ArchivedNotice notes={archivedNotes} />
 
-            <NotesList notes={filteredNotes} toggleChecklistItem={toggleChecklistItem} onDelete={setNoteToDelete} onSelectNote={setSelectedNote} onPinned={handleEditNote} highlightId={highlightId} />
+            <NotesList
+                notes={filteredNotes}
+                toggleChecklistItem={toggleChecklistItem}
+                onDelete={setNoteToDelete}
+                onSelectNote={setSelectedNote}
+                onPinned={handleEditNote}
+                highlightId={highlightId}
+            />
+
             {noteToDelete && (
                 <ConfirmModal
                     message="Yakin mau hapus catatan ini?"
@@ -252,14 +305,14 @@ function NotesPage() {
 
             {selectedNote && (
                 <EditModal
-                    onClose={() => { setSelectedNote(null) }}
+                    onClose={() => setSelectedNote(null)}
                     onSave={handleEditNote}
                     initialData={selectedNote}
                 />
             )}
-
         </>
     );
+
 }
 
 export default NotesPage;

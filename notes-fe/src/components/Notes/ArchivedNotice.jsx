@@ -6,7 +6,17 @@ export default function ArchivedNotice({ notes }) {
     if (!archivedCount) return null;
 
     return (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2 text-sm text-yellow-800">
+        <div
+            className="
+        mb-4 p-3 
+        bg-tertiary 
+        border border-custom 
+        rounded-lg 
+        flex items-center gap-2 
+        text-sm text-secondary
+        transition-colors
+      "
+        >
             <Archive size={16} />
             <span>{archivedCount} catatan diarsipkan (lebih dari 7 hari)</span>
         </div>

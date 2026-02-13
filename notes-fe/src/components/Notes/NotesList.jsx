@@ -56,9 +56,12 @@ export default function NotesList({
 
     if (!sortedNotes.length) {
         return (
-            <p className="text-gray-400 text-center py-12">
-                Belum ada catatan di kategori ini
-            </p>
+            <div className="flex flex-col items-center justify-center py-16 text-secondary transition-colors">
+                <div className="text-5xl mb-4 opacity-40">📝</div>
+                <p className="text-sm">
+                    Belum ada catatan di kategori ini
+                </p>
+            </div>
         );
     }
 

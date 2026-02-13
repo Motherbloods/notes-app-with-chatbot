@@ -6,6 +6,7 @@ import {
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import categories from "../config/categories";
+import ThemeToggle from "./ThemeToggle";
 
 function Sidebar({ notesCount }) {
     const [searchInput, setSearchInput] = useState("");
@@ -57,16 +58,22 @@ function Sidebar({ notesCount }) {
     }, [searchInput, navigate]);
 
     return (
-        <div className="w-64 bg-white border-r border-gray-200 p-4">
-            <h1 className="text-2xl font-bold mb-6 text-gray-800">Second Brain</h1>
+        <div className="w-64 bg-primary border-r border-custom p-4 transition-colors">
+
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-primary">
+                    Second Brain
+                </h1>
+                <ThemeToggle />
+            </div>
 
             <NavLink
                 to="/notes/new"
                 className={({ isActive }) =>
-                    `w-full flex items-center gap-2 px-4 py-2 rounded-lg mb-6 transition
-     ${isActive
-                        ? "bg-blue-700 text-white"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    `w-full flex items-center gap-2 px-4 py-2 rounded-lg mb-6 transition text-white
+        ${isActive
+                        ? "btn-primary"
+                        : "btn-primary hover:opacity-90"
                     }`
                 }
             >
@@ -81,7 +88,7 @@ function Sidebar({ notesCount }) {
                     onKeyDown={handleSearchKeyDown}
                 />
                 {searchInput && (
-                    <p className="text-xs text-gray-500 mt-1 px-1">
+                    <p className="text-xs text-secondary mt-1 px-1">
                         Press Enter for AI search
                     </p>
                 )}
@@ -90,32 +97,35 @@ function Sidebar({ notesCount }) {
             <div className="space-y-1">
                 {Object.entries(categories).map(([key, { icon: Icon, label, color, link }]) => {
                     const count = notesCount.find(n => n.category === key)?.count || 0;
+
                     return (
                         <NavLink
                             key={key}
                             to={link}
                             className={({ isActive }) =>
-                                `w-full flex items-center gap-2 px-4 py-2 rounded-lg transition ${isActive
-                                    ? "bg-gray-100 text-gray-900"
-                                    : "text-gray-600 hover:bg-gray-50"
+                                `w-full flex items-center gap-2 px-4 py-2 rounded-lg transition
+              ${isActive
+                                    ? "bg-tertiary text-primary"
+                                    : "text-secondary hover:bg-secondary"
                                 }`
                             }
                         >
                             <Icon size={20} className={color} />
                             <span className="flex-1 text-left">{label}</span>
-                            <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
+                            <span className="text-xs bg-tertiary px-2 py-1 rounded-full">
                                 {count}
                             </span>
                         </NavLink>
-
                     );
                 })}
 
-                <NavLink to="/chatbot"
+                <NavLink
+                    to="/chatbot"
                     className={({ isActive }) =>
-                        `w-full flex items-center gap-2 px-4 py-2 rounded-lg transition ${isActive
-                            ? "bg-gray-100 text-gray-900"
-                            : "text-gray-600 hover:bg-gray-50"
+                        `w-full flex items-center gap-2 px-4 py-2 rounded-lg transition
+          ${isActive
+                            ? "bg-tertiary text-primary"
+                            : "text-secondary hover:bg-secondary"
                         }`
                     }
                 >
@@ -125,6 +135,7 @@ function Sidebar({ notesCount }) {
             </div>
         </div>
     );
+
 }
 
 export default Sidebar;

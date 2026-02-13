@@ -7,9 +7,10 @@ function MainLayout() {
     const { notesCount } = useNotes();
 
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className="flex h-screen overflow-hidden bg-secondary text-primary">
             <Sidebar notesCount={notesCount} />
-            <div className="flex-1 p-4 overflow-hidden">
+
+            <div className="flex-1 p-6 overflow-auto bg-primary">
                 <Outlet />
             </div>
             <Toaster position="top-right" reverseOrder={false} />

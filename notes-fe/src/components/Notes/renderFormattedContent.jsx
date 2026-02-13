@@ -20,10 +20,10 @@ function renderFormattedContent(note, toggleChecklistItem) {
         elements.push(
           <ol
             key={`list-${elements.length}`}
-            className="list-decimal list-inside space-y-1 my-2"
+            className="list-decimal list-inside space-y-1 my-2 text-primary"
           >
             {currentList.map((item, i) => (
-              <li key={i} className="text-gray-700">
+              <li key={i}>
                 {item}
               </li>
             ))}
@@ -33,10 +33,10 @@ function renderFormattedContent(note, toggleChecklistItem) {
         elements.push(
           <ul
             key={`list-${elements.length}`}
-            className="list-disc list-inside space-y-1 my-2"
+            className="list-disc list-inside space-y-1 my-2 text-primary"
           >
             {currentList.map((item, i) => (
-              <li key={i} className="text-gray-700">
+              <li key={i}>
                 {item}
               </li>
             ))}
@@ -61,20 +61,28 @@ function renderFormattedContent(note, toggleChecklistItem) {
       checklistCounter++;
 
       elements.push(
-        <div key={`checklist-${lineIndex}`} className="flex items-start gap-2 my-1">
+        <div
+          key={`checklist-${lineIndex}`}
+          className="flex items-start gap-2 my-1"
+        >
           <button
-            onClick={(e) => { e.stopPropagation(); toggleChecklistItem(note._id, currentChecklistIndex) }}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleChecklistItem(note._id, currentChecklistIndex);
+            }}
             className="mt-0.5 shrink-0 hover:opacity-70 transition-opacity"
             aria-label={isChecked ? "Uncheck item" : "Check item"}
           >
             {isChecked ? (
               <CheckSquare size={18} className="text-green-600" />
             ) : (
-              <Square size={18} className="text-gray-400" />
+              <Square size={18} className="text-secondary" />
             )}
           </button>
           <span
-            className={`text-gray-700 ${isChecked ? "line-through text-gray-400" : ""}`}
+            className={`
+        ${isChecked ? "line-through text-secondary" : "text-primary"}
+      `}
           >
             {text}
           </span>
@@ -109,9 +117,13 @@ function renderFormattedContent(note, toggleChecklistItem) {
     flushList();
     if (line.trim()) {
       elements.push(
-        <p key={`text-${lineIndex}`} className="text-gray-700 my-1">
+        <p
+          key={`text-${lineIndex}`}
+          className="text-primary my-1"
+        >
           {line}
         </p>
+
       );
     } else {
       elements.push(<div key={`space-${lineIndex}`} className="h-2" />);
