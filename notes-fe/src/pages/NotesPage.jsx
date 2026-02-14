@@ -9,6 +9,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import EditModal from "../components/EditModal";
 import { useNotes } from "../context/NotesContext";
 import toast from "react-hot-toast";
+import NotesSkeleton from "../components/NotesSkeleton";
 
 function NotesPage() {
     const { decrementCounter, incrementCounter } = useNotes();
@@ -19,6 +20,7 @@ function NotesPage() {
     const highlightId = location.state?.highlightId;
 
     const [notes, setNotes] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [dateFilter, setDateFilter] = useState("all");
     const [customDate, setCustomDate] = useState("");
     const [startDate, setStartDate] = useState("");
@@ -29,11 +31,14 @@ function NotesPage() {
 
     useEffect(() => {
         const fetchNotes = async () => {
+            setIsLoading(true);
             try {
                 const data = await getNotesByCategory(category);
                 setNotes(data);
             } catch (error) {
                 console.error("Error fetching notes:", error);
+            } finally {
+                setIsLoading(false);
             }
         }
         fetchNotes()
@@ -286,7 +291,9 @@ function NotesPage() {
 
             <ArchivedNotice notes={archivedNotes} />
 
-            <NotesList
+            {isLoading ? (
+                <NotesSkeleton />
+            ) : (<NotesList
                 notes={filteredNotes}
                 toggleChecklistItem={toggleChecklistItem}
                 onDelete={setNoteToDelete}
@@ -294,6 +301,7 @@ function NotesPage() {
                 onPinned={handleEditNote}
                 highlightId={highlightId}
             />
+            )}
 
             {noteToDelete && (
                 <ConfirmModal
