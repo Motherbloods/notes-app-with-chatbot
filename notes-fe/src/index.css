@@ -91,4 +91,29 @@ body {
   .btn-primary:hover {
     background-color: var(--color-blue-hover);
   }
+
+  /* Custom Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-bg-primary);
+}
+
+/* Untuk Webkit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-secondary);
+}
 }

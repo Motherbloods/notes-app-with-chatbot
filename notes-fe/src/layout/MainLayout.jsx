@@ -10,7 +10,7 @@ function MainLayout() {
         <div className="flex h-screen overflow-hidden bg-secondary text-primary">
             <Sidebar notesCount={notesCount} />
 
-            <div className="flex-1 p-6 overflow-auto bg-primary">
+            <div className="flex-1 p-6 overflow-hidden bg-primary">
                 <Outlet />
             </div>
             <Toaster position="top-right" reverseOrder={false} />
