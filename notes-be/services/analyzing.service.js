@@ -189,9 +189,7 @@ Return JSON:
       }
 
       parsedResult = JSON.parse(cleanContent);
-      console.log("Parsed LLM analysis result:", parsedResult);
 
-      // Validation
       const validCategories = [
         "target_harian",
         "ide",
@@ -200,9 +198,6 @@ Return JSON:
         "lainnya",
       ];
       if (!validCategories.includes(parsedResult.category)) {
-        console.warn(
-          `Invalid category: ${parsedResult.category}, defaulting to 'lainnya'`,
-        );
         parsedResult.category = "lainnya";
       }
 
@@ -246,34 +241,27 @@ Return JSON:
           ? parsedResult.codeMetadata.errors
           : [];
       }
-    } catch (error) {
-      console.error("Failed to parse LLM response:", error);
+
+      return parsedResult;
+    } catch (parseError) {
+      console.error("Failed to parse LLM response:", parseError);
       console.error("Raw response:", messageContent);
 
-      // Fallback
       return {
         category: "lainnya",
-        confidence: 0.3,
+        confidence: 0.5,
         lineFormats: [],
         reformattedContent: note,
         codeMetadata: null,
       };
     }
-    return parsedResult;
   } catch (error) {
     console.error("Error in analyzingNotesWithLLM:", error);
-
-    return {
-      category: "lainnya",
-      confidence: 0.1,
-      lineFormats: [],
-      reformattedContent: note || "",
-      codeMetadata: null,
-    };
+    throw error;
   }
 };
 
-const generateTitleFromLLM = async (msg) => {
+const generateTitleFromLLM = async (messageContent) => {
   try {
     const apikey = process.env.OPENROUTER_API_KEY;
     const response = await fetch(
@@ -291,28 +279,12 @@ const generateTitleFromLLM = async (msg) => {
           messages: [
             {
               role: "system",
-              content: `You are a title generator. Create a short, concise title (max 5 words) that summarizes the main topic or intent of the user's message. 
-
-Rules:
-- Keep it under 5 words
-- Use Indonesian language
-- Be specific and descriptive
-- Don't use punctuation at the end
-- Return ONLY the title, no quotes or extra text
-
-Examples:
-Input: "Bagaimana cara membuat REST API dengan Express.js?"
-Output: Membuat REST API Express
-
-Input: "Tolong buatkan daftar belanja untuk minggu ini"
-Output: Daftar Belanja Mingguan
-
-Input: "1. Belajar JavaScript\n2. Olahraga pagi\n3. Baca buku"
-Output: Target Harian Produktif`,
+              content:
+                "Generate a short, descriptive title (max 5 words) in Indonesian for this conversation. Return ONLY the title, no quotes or extra text.",
             },
             {
               role: "user",
-              content: msg,
+              content: messageContent,
             },
           ],
         }),
@@ -320,33 +292,376 @@ Output: Target Harian Produktif`,
     );
 
     const data = await response.json();
-    const title = data.choices[0].message.content.trim();
-
-    if (!title || title.length > 50) {
-      return msg.substring(0, 30).trim() + (msg.length > 30 ? "..." : "");
-    }
-
-    return title;
+    const title = data.choices[0].message.content
+      .trim()
+      .replace(/^["']|["']$/g, "");
+    return title || "Chat Baru";
   } catch (error) {
-    console.error("Error in generateTitleFromLLM:", error);
-
-    return msg.substring(0, 30).trim() + (msg.length > 30 ? "..." : "");
+    console.error("Error generating title:", error);
+    return "Chat Baru";
   }
 };
 
 /**
- * NEW FUNCTION: Prepare notes context for chatbot
- * Extracts relevant information from user's notes history
+ * NEW: Parse date/time from user message
  */
-const prepareNotesContext = (allNotes, limit = 20) => {
-  try {
-    // Sort by most recent first
-    const sortedNotes = [...allNotes]
-      .filter((note) => !note.deletedAt)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, limit);
+const parseDateFromMessage = (message) => {
+  const now = new Date();
+  const lowerMsg = message.toLowerCase();
 
-    // Categorize notes
+  const monthNames = {
+    januari: 0,
+    februari: 1,
+    maret: 2,
+    april: 3,
+    mei: 4,
+    juni: 5,
+    juli: 6,
+    agustus: 7,
+    september: 8,
+    oktober: 9,
+    november: 10,
+    desember: 11,
+  };
+
+  const dayNames = {
+    minggu: 0,
+    senin: 1,
+    selasa: 2,
+    rabu: 3,
+    kamis: 4,
+    jumat: 5,
+    sabtu: 6,
+  };
+
+  let targetDate = null;
+
+  const dateMonthPattern =
+    /(\d{1,2})\s+(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)/i;
+  const match = lowerMsg.match(dateMonthPattern);
+
+  if (match) {
+    const day = parseInt(match[1]);
+    const month = monthNames[match[2].toLowerCase()];
+    const year = now.getFullYear();
+    targetDate = new Date(year, month, day);
+
+    console.log(
+      `[DateParse] Found specific date: ${targetDate.toLocaleDateString("id-ID")}`,
+    );
+    return {
+      type: "specific_date",
+      date: targetDate,
+      startDate: new Date(year, month, day, 0, 0, 0),
+      endDate: new Date(year, month, day, 23, 59, 59),
+    };
+  }
+
+  for (const [dayName, dayIndex] of Object.entries(dayNames)) {
+    if (lowerMsg.includes(`hari ${dayName}`)) {
+      const today = now.getDay();
+      let daysAgo = (today - dayIndex + 7) % 7;
+      if (daysAgo === 0) daysAgo = 0; // Today
+
+      targetDate = new Date(now);
+      targetDate.setDate(now.getDate() - daysAgo);
+
+      console.log(
+        `[DateParse] Found day name: ${dayName}, daysAgo: ${daysAgo}, date: ${targetDate.toLocaleDateString("id-ID")}`,
+      );
+      return {
+        type: "day_of_week",
+        date: targetDate,
+        startDate: new Date(
+          targetDate.getFullYear(),
+          targetDate.getMonth(),
+          targetDate.getDate(),
+          0,
+          0,
+          0,
+        ),
+        endDate: new Date(
+          targetDate.getFullYear(),
+          targetDate.getMonth(),
+          targetDate.getDate(),
+          23,
+          59,
+          59,
+        ),
+      };
+    }
+  }
+
+  if (lowerMsg.includes("kemarin")) {
+    targetDate = new Date(now);
+    targetDate.setDate(now.getDate() - 1);
+
+    console.log(
+      `[DateParse] Found "kemarin": ${targetDate.toLocaleDateString("id-ID")}`,
+    );
+    return {
+      type: "relative",
+      date: targetDate,
+      startDate: new Date(
+        targetDate.getFullYear(),
+        targetDate.getMonth(),
+        targetDate.getDate(),
+        0,
+        0,
+        0,
+      ),
+      endDate: new Date(
+        targetDate.getFullYear(),
+        targetDate.getMonth(),
+        targetDate.getDate(),
+        23,
+        59,
+        59,
+      ),
+    };
+  }
+
+  if (lowerMsg.includes("hari ini") || lowerMsg.includes("sekarang")) {
+    console.log(
+      `[DateParse] Found "hari ini": ${now.toLocaleDateString("id-ID")}`,
+    );
+    return {
+      type: "today",
+      date: now,
+      startDate: new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        0,
+        0,
+        0,
+      ),
+      endDate: new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+      ),
+    };
+  }
+
+  if (lowerMsg.includes("minggu ini")) {
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    console.log(
+      `[DateParse] Found "minggu ini": ${startOfWeek.toLocaleDateString("id-ID")} - ${endOfWeek.toLocaleDateString("id-ID")}`,
+    );
+    return {
+      type: "week",
+      date: now,
+      startDate: new Date(
+        startOfWeek.getFullYear(),
+        startOfWeek.getMonth(),
+        startOfWeek.getDate(),
+        0,
+        0,
+        0,
+      ),
+      endDate: new Date(
+        endOfWeek.getFullYear(),
+        endOfWeek.getMonth(),
+        endOfWeek.getDate(),
+        23,
+        59,
+        59,
+      ),
+    };
+  }
+
+  if (lowerMsg.includes("bulan ini")) {
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+      0,
+      0,
+      0,
+    );
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+    );
+
+    console.log(
+      `[DateParse] Found "bulan ini": ${startOfMonth.toLocaleDateString("id-ID")} - ${endOfMonth.toLocaleDateString("id-ID")}`,
+    );
+    return {
+      type: "month",
+      date: now,
+      startDate: startOfMonth,
+      endDate: endOfMonth,
+    };
+  }
+
+  return null;
+};
+
+/**
+ * NEW: Search notes by date range
+ */
+const searchNotesByDate = (notes, dateInfo) => {
+  if (!dateInfo) return [];
+
+  const { startDate, endDate } = dateInfo;
+
+  const filteredNotes = notes.filter((note) => {
+    const noteDate = new Date(note.createdAt);
+    return noteDate >= startDate && noteDate <= endDate;
+  });
+
+  console.log(
+    `[DateSearch] Found ${filteredNotes.length} notes between ${startDate.toLocaleDateString("id-ID")} and ${endDate.toLocaleDateString("id-ID")}`,
+  );
+
+  return filteredNotes.sort(
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+  );
+};
+
+/**
+ * Extract relevant keywords from user message
+ */
+const extractKeywords = (message) => {
+  const commonWords = [
+    "apa",
+    "yang",
+    "saya",
+    "ingin",
+    "mau",
+    "pengen",
+    "sudah",
+    "belum",
+    "terakhir",
+    "setelah",
+    "untuk",
+    "dan",
+    "atau",
+    "dari",
+    "ke",
+    "di",
+    "dengan",
+    "hari",
+    "tanggal",
+    "ada",
+    "aja",
+    "ya",
+    "dong",
+    "catatan",
+    "notes",
+    "note",
+    "apakah",
+    "terkait",
+    "tentang",
+    "mengandung",
+    "kata",
+    "carikan",
+    "cari",
+    "cek",
+    "lihat",
+    "tampilkan",
+    "kasih",
+    "berisi",
+    "punya",
+    "ada",
+    "adalah",
+    "ini",
+    "itu",
+    "tersebut",
+    "lagi",
+    "dulu",
+    "kan",
+  ];
+
+  const patterns = [
+    /(?:terkait|tentang|mengenai|mengandung kata)\s+(\w+)/gi,
+    /(?:catatan|notes?)\s+(?:yang\s+)?(?:berisi|punya|ada)\s+(\w+)/gi,
+    /carikan?\s+.*?(\w{4,})/gi, // Extract meaningful words after "cari"
+  ];
+
+  let extractedKeywords = [];
+
+  patterns.forEach((pattern) => {
+    let match;
+    while ((match = pattern.exec(message)) !== null) {
+      if (
+        match[1] &&
+        match[1].length > 2 &&
+        !commonWords.includes(match[1].toLowerCase())
+      ) {
+        extractedKeywords.push(match[1].toLowerCase());
+      }
+    }
+  });
+
+  if (extractedKeywords.length === 0) {
+    const words = message
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((word) => {
+        const cleanWord = word.replace(/[.,!?;:"'()]/g, "");
+        return cleanWord.length > 2 && !commonWords.includes(cleanWord);
+      });
+
+    extractedKeywords = words;
+  }
+
+  return [...new Set(extractedKeywords)];
+};
+
+/**
+ * Search notes by keywords with relevance scoring
+ */
+const searchNotesByKeywords = (notes, keywords) => {
+  if (keywords.length === 0) return [];
+
+  const scoredNotes = notes.map((note) => {
+    const content = note.content.toLowerCase();
+    let score = 0;
+
+    keywords.forEach((keyword) => {
+      const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`\\b${escapeRegex(keyword)}\\b`, "gi");
+      const matches = content.match(regex);
+      if (matches) {
+        score += matches.length * 10;
+      }
+      if (content.includes(keyword)) {
+        score += 5;
+      }
+    });
+
+    return { note, score };
+  });
+
+  return scoredNotes
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.note);
+};
+
+/**
+ * Prepare notes context with smart search (keyword + temporal)
+ */
+const prepareNotesContext = (notes, userMessage = "") => {
+  try {
+    const sortedNotes = [...notes].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    );
+
     const categorizedNotes = {
       target_harian: [],
       ide: [],
@@ -355,7 +670,6 @@ const prepareNotesContext = (allNotes, limit = 20) => {
       lainnya: [],
     };
 
-    // Extract checklist items status
     const todoItems = {
       completed: [],
       pending: [],
@@ -372,32 +686,76 @@ const prepareNotesContext = (allNotes, limit = 20) => {
 
       categorizedNotes[category].push(noteData);
 
-      // Extract checklist items
       if (note.content) {
         const lines = note.content.split("\n");
         lines.forEach((line) => {
           if (line.trim().startsWith("- [x]")) {
-            todoItems.completed.push({
-              task: line.replace("- [x]", "").trim(),
-              completedAt: note.updatedAt,
-              noteId: note._id,
-            });
-          } else if (line.trim().startsWith("- [ ]")) {
-            todoItems.pending.push({
-              task: line.replace("- [ ]", "").trim(),
-              createdAt: note.createdAt,
-              noteId: note._id,
-            });
+            const match = line.match(/<!--completed:(.*?)-->/);
+
+            if (match) {
+              const completedAt = new Date(match[1]);
+
+              todoItems.completed.push({
+                task: line
+                  .replace("- [x]", "")
+                  .replace(/<!--completed:.*?-->/, "")
+                  .trim(),
+                completedAt,
+                noteId: note._id,
+                noteCreatedAt: note.createdAt, // for reference
+              });
+            }
           }
         });
       }
     });
 
+    const dateInfo = parseDateFromMessage(userMessage);
+    let dateFilteredNotes = [];
+
+    if (dateInfo) {
+      dateFilteredNotes = searchNotesByDate(sortedNotes, dateInfo);
+    }
+
+    let relevantNotes = [];
+    if (userMessage) {
+      const keywords = extractKeywords(userMessage);
+      console.log(
+        `[ChatBot] Extracted keywords from "${userMessage}": [${keywords.join(", ")}]`,
+      );
+
+      if (keywords.length > 0) {
+        relevantNotes = searchNotesByKeywords(sortedNotes, keywords);
+        console.log(
+          `[ChatBot] Found ${relevantNotes.length} relevant notes for keywords: ${keywords.join(", ")}`,
+        );
+
+        if (relevantNotes.length > 0) {
+          console.log(
+            `[ChatBot] Top relevant note: ${relevantNotes[0].content.substring(0, 100)}...`,
+          );
+        } else {
+          console.log(
+            `[ChatBot] WARNING: No relevant notes found despite having ${sortedNotes.length} total notes`,
+          );
+        }
+      } else {
+        console.log(`[ChatBot] WARNING: No keywords extracted from message`);
+      }
+    }
+
+    todoItems.completed.sort(
+      (a, b) => new Date(b.completedAt) - new Date(a.completedAt),
+    );
+
     return {
       totalNotes: sortedNotes.length,
       categorizedNotes,
       todoItems,
-      recentNotes: sortedNotes.slice(0, 5), // Last 5 notes
+      recentNotes: sortedNotes.slice(0, 5),
+      relevantNotes: relevantNotes.slice(0, 10),
+      dateFilteredNotes: dateFilteredNotes,
+      dateInfo: dateInfo,
       lastActivity: sortedNotes[0]?.createdAt || null,
     };
   } catch (error) {
@@ -407,25 +765,26 @@ const prepareNotesContext = (allNotes, limit = 20) => {
       categorizedNotes: {},
       todoItems: { completed: [], pending: [] },
       recentNotes: [],
+      relevantNotes: [],
+      dateFilteredNotes: [],
+      dateInfo: null,
       lastActivity: null,
     };
   }
 };
 
 /**
- * ENHANCED: Generate bot response with notes context
- * Now can answer questions about user's notes history
+ * Generate bot response with improved notes context (keyword + temporal)
  */
 const generateBotResponse = async (
   userMessage,
   conversationHistory = [],
   allNotes = [],
 ) => {
+  console.log("ini allnotes", allNotes);
   try {
     const apikey = process.env.OPENROUTER_API_KEY;
-
-    // Prepare notes context
-    const notesContext = prepareNotesContext(allNotes);
+    const notesContext = prepareNotesContext(allNotes, userMessage);
 
     const messages = [
       {
@@ -433,88 +792,58 @@ const generateBotResponse = async (
         content: `Anda adalah asisten notes yang cerdas dan membantu. Anda membantu user mengelola berbagai jenis catatan dan dapat menjawab pertanyaan tentang riwayat notes mereka.
 
 **NOTES CONTEXT AVAILABLE:**
-Anda memiliki akses ke data notes user:
 - Total notes: ${notesContext.totalNotes}
 - Completed tasks: ${notesContext.todoItems.completed.length}
 - Pending tasks: ${notesContext.todoItems.pending.length}
 - Last activity: ${notesContext.lastActivity ? new Date(notesContext.lastActivity).toLocaleString("id-ID") : "N/A"}
 
-**CATEGORIES & RESPONSE STYLE:**
+**ANSWERING QUESTIONS:**
+User dapat bertanya:
+- "Saya terakhir ngerjain apa?" → recent notes
+- "Tanggal 9 februari saya ngerjain apa?" → notes by date
+- "Hari jumat ada apa aja?" → notes by day
+- "Setelah saya selesai X, apa yang ingin saya lakukan?" → relevant notes
 
-1. **target_harian** (To-do lists, daily tasks, checklists):
-   - Respond dengan motivasi dan tips produktivitas
-   - Sarankan prioritas atau cara mengorganisir tasks
-   - Gunakan format checklist (- [ ]) untuk actionable items
-   - Tanyakan detail atau deadline jika perlu
-   - Contoh: "Bagus! Saya sudah mencatat target harian kamu. Mana yang paling prioritas untuk hari ini?"
+Ketika menjawab:
+1. PRIORITASKAN notes yang filtered by date jika user menanyakan tanggal/hari tertentu
+2. Gunakan notes yang relevan dengan keyword jika tidak ada temporal filter
+3. Berikan jawaban spesifik dan sebutkan tanggal/waktu
+4. Jika tidak menemukan informasi, katakan dengan jelas
 
-2. **ide** (Ideas, brainstorming, concepts):
-   - Respond dengan eksplorasi ide lebih lanjut
-   - Berikan pertanyaan untuk memperdalam ide
-   - Sarankan langkah implementasi
-   - Gunakan bullet points (-) untuk list ide
-   - Contoh: "Ide menarik! Untuk fitur login ini, sudah kepikiran mau pakai JWT atau session-based authentication?"
-
-3. **kode** (Programming code):
-   - Respond dengan analisis teknis
-   - Jelaskan apa yang code lakukan
-   - Tunjukkan error atau improvement jika ada
-   - Sarankan best practices
-   - Gunakan code blocks dengan syntax highlighting
-   - Contoh: "Code JavaScript-nya sudah bagus. Saya lihat ada potential error di line 3..."
-
-4. **catatan** (Meeting notes, documentation):
-   - Respond dengan ringkasan atau poin penting
-   - Sarankan struktur yang lebih baik jika perlu
-   - Tanyakan apakah ada action items yang perlu difollow-up
-   - Gunakan numbered list (1. 2. 3.) untuk sequential steps
-   - Contoh: "Oke, sudah saya catat. Dari meeting ini ada 3 action items yang perlu difollow-up..."
-
-5. **lainnya** (General):
-   - Respond sesuai konteks
-   - Tawarkan bantuan spesifik
-   - Adaptif terhadap kebutuhan user
-
-**ANSWERING QUESTIONS ABOUT NOTES:**
-User dapat bertanya tentang notes mereka, seperti:
-- "Saya terakhir ngerjain apa?" → Lihat recent notes
-- "Tugas apa yang belum selesai?" → Lihat pending tasks
-- "Terakhir saya sudah menyelesaikan apa?" → Lihat completed tasks
-- "Saya pengen beli apa?" → Cari dalam notes yang mengandung kata "beli"
-
-Ketika menjawab pertanyaan ini:
-1. Analisis notes context yang tersedia
-2. Berikan jawaban yang spesifik dan relevan
-3. Sebutkan tanggal/waktu jika relevan
-4. Tawarkan untuk memberikan detail lebih lanjut
-
-**FORMATTING RULES:**
-- Gunakan Markdown formatting
-- Gunakan - [ ] untuk tasks yang bisa diceklis
-- Gunakan - untuk bullet points (ideas, features)
+**FORMATTING:**
+- Gunakan - [ ] untuk tasks
+- Gunakan - untuk bullet points
 - Gunakan 1. 2. 3. untuk sequential steps
-- Gunakan \`code\` untuk inline code
-- Gunakan \`\`\`language untuk code blocks
 
 **TONE:**
-- Ramah dan supportif
-- Bahasa Indonesia yang natural
-- Singkat tapi informatif
-- Proaktif memberikan saran
+- Ramah, bahasa Indonesia natural, singkat tapi informatif
 
 **IMPORTANT:**
 - ALWAYS respond in Indonesian
-- Be concise but helpful
-- Ask clarifying questions when needed
-- Provide actionable suggestions
-- Use the notes context to give personalized responses`,
+- PRIORITIZE date-filtered notes when user asks about specific dates/days
+ATURAN PENTING:
+1. **FUZZY MATCHING**: Jika user nanya dengan typo/salah ketik, tetap cari yang relevan
+   Contoh: "zerocloduflare" = "cloudflare" atau "zerocloudflare"
+           "dokcer" = "docker"
+           "nood" = "node"
+   
+2. **SEMANTIC SEARCH**: Cari berdasarkan topik/makna, bukan cuma exact match
+   Contoh: "deploy aplikasi" → cari notes tentang deployment, docker, hosting
+           "autentikasi" → cari notes tentang login, auth, middleware
+   
+3. **ALWAYS SEARCH NOTES**: Setiap kali user tanya tentang catatan mereka, SELALU cek notes dulu
+   Jangan langsung bilang "tidak ada" tanpa cek similarity
+
+4. **FORMAT JAWABAN**:
+   - Kalau ketemu: Kasih ringkasan + kutip bagian relevan dari notes
+   - Kalau ga ketemu: Bilang ga ada, tapi suggest keyword yang mungkin relevan
+
+`,
       },
     ];
 
-    const recentHistory = conversationHistory.slice(-10);
-    messages.push(...recentHistory);
+    messages.push(...conversationHistory.slice(-10));
 
-    // Add notes context as a system message if user is asking about their notes
     const questionKeywords = [
       "terakhir",
       "belum",
@@ -526,49 +855,112 @@ Ketika menjawab pertanyaan ini:
       "kerjaan",
       "todo",
       "sudah",
+      "setelah",
+      "ingin",
+      "mau",
+      "pengen",
+      "rencana",
+      "tanggal",
+      "hari",
+      "kemarin",
+      "minggu",
+      "bulan",
     ];
     const isAskingAboutNotes = questionKeywords.some((keyword) =>
       userMessage.toLowerCase().includes(keyword),
     );
 
-    if (isAskingAboutNotes) {
-      messages.push({
-        role: "system",
-        content: `CONTEXT DATA - Recent Notes:
+    if (allNotes.length > 0) {
+      let contextMessage = `CONTEXT DATA - User's Notes:`;
+
+      if (notesContext.dateInfo && notesContext.dateFilteredNotes.length > 0) {
+        const dateRange =
+          notesContext.dateInfo.type === "specific_date"
+            ? new Date(notesContext.dateInfo.date).toLocaleDateString("id-ID", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+            : `${new Date(notesContext.dateInfo.startDate).toLocaleDateString("id-ID")} - ${new Date(notesContext.dateInfo.endDate).toLocaleDateString("id-ID")}`;
+
+        contextMessage += `
+
+**Notes Pada ${dateRange} (${notesContext.dateFilteredNotes.length} notes):**
+${notesContext.dateFilteredNotes
+  .map(
+    (note, i) => `
+${i + 1}. [${note.category}] - ${new Date(note.createdAt).toLocaleString("id-ID")}
+${note.content.substring(0, 400)}${note.content.length > 400 ? "..." : ""}
+`,
+  )
+  .join("\n")}`;
+      }
+
+      if (notesContext.relevantNotes.length > 0 && !notesContext.dateInfo) {
+        contextMessage += `
+
+**Notes Yang Relevan:**
+${notesContext.relevantNotes
+  .map(
+    (note, i) => `
+${i + 1}. [${note.category}] - ${new Date(note.createdAt).toLocaleString("id-ID")}
+${note.content.substring(0, 300)}${note.content.length > 300 ? "..." : ""}
+`,
+  )
+  .join("\n")}`;
+      }
+
+      if (!notesContext.dateInfo && notesContext.relevantNotes.length === 0) {
+        contextMessage += `
 
 **5 Notes Terbaru:**
 ${notesContext.recentNotes
   .map(
     (note, i) => `
 ${i + 1}. [${note.category}] - ${new Date(note.createdAt).toLocaleString("id-ID")}
-${note.content.substring(0, 150)}${note.content.length > 150 ? "..." : ""}
+${note.content.substring(0, 200)}${note.content.length > 200 ? "..." : ""}
 `,
   )
-  .join("\n")}
+  .join("\n")}`;
+      }
 
-**Tugas Yang Belum Selesai (${notesContext.todoItems.pending.length}):**
-${
-  notesContext.todoItems.pending
-    .slice(0, 10)
-    .map(
-      (item, i) => `
-${i + 1}. ${item.task} (dibuat ${new Date(item.createdAt).toLocaleString("id-ID")})`,
-    )
-    .join("\n") || "Tidak ada tugas pending"
-}
+      if (notesContext.todoItems.completed.length > 0) {
+        contextMessage += `
 
-**Tugas Yang Sudah Selesai (${notesContext.todoItems.completed.length}):**
-${
-  notesContext.todoItems.completed
-    .slice(0, 5)
-    .map(
-      (item, i) => `
-${i + 1}. ${item.task} (selesai ${new Date(item.completedAt).toLocaleString("id-ID")})`,
-    )
-    .join("\n") || "Belum ada tugas yang selesai"
-}
+**COMPLETED TASKS (sorted by completion time, newest first):**
+${notesContext.todoItems.completed
+  .slice(0, 10) // Top 10 most recent
+  .map(
+    (task, i) => `
+${i + 1}. "${task.task}"
+   Completed: ${new Date(task.completedAt).toLocaleString("id-ID", {
+     weekday: "long",
+     year: "numeric",
+     month: "long",
+     day: "numeric",
+     hour: "2-digit",
+     minute: "2-digit",
+     second: "2-digit",
+   })}
+   Note ID: ${task.noteId}
+`,
+  )
+  .join("\n")}`;
+      }
 
-Gunakan informasi ini untuk menjawab pertanyaan user dengan spesifik dan akurat.`,
+      contextMessage += `
+
+**PENTING:** 
+- PRIORITASKAN notes yang difilter berdasarkan tanggal
+- Berikan jawaban spesifik berdasarkan content notes
+- Sebutkan tanggal pembuatan note untuk konteks temporal
+- **UNTUK "terakhir centang/selesai apa": GUNAKAN completed tasks list di atas, task NOMOR 1 adalah yang paling baru!**
+- Completed tasks SUDAH TERSORTIR by completedAt (descending), jadi yang paling atas = paling baru`;
+
+      messages.push({
+        role: "system",
+        content: contextMessage,
       });
     }
 
@@ -576,6 +968,8 @@ Gunakan informasi ini untuk menjawab pertanyaan user dengan spesifik dan akurat.
       role: "user",
       content: userMessage,
     });
+
+    console.log("[ChatBot] Sending request to LLM with context...");
 
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -597,10 +991,10 @@ Gunakan informasi ini untuk menjawab pertanyaan user dengan spesifik dan akurat.
     const data = await response.json();
     const botResponse = data.choices[0].message.content.trim();
 
+    console.log("[ChatBot] Bot response generated successfully");
     return botResponse;
   } catch (error) {
     console.error("Error in generateBotResponse:", error);
-
     return "Maaf, saya sedang mengalami kendala. Tapi catatan kamu sudah tersimpan dengan aman! 📝";
   }
 };
@@ -609,5 +1003,5 @@ module.exports = {
   analyzingNotesWithLLM,
   generateTitleFromLLM,
   generateBotResponse,
-  prepareNotesContext, // Export the new helper function
+  prepareNotesContext,
 };
