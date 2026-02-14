@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Check, AlertTriangle, CheckCircle2, Code2 } from "lucide-react";
+import { X, Check, AlertTriangle, CheckCircle2, Code2, Loader2 } from "lucide-react";
 
 function ModalPreview({
     isOpen,
@@ -12,6 +12,7 @@ function ModalPreview({
     lineFormats,
     onCategoryChange,
     onSave,
+    isSaving
 }) {
     const [showSuggested, setShowSuggested] = useState(false);
 
@@ -254,20 +255,43 @@ function ModalPreview({
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-accent/40 flex gap-3 justify-end bg-secondary">
+                <div className="p-6 border-t border-custom flex gap-3 justify-end bg-secondary">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 border border-accent/40 rounded-xl hover:bg-accent/10 transition-colors text-primary"
+                        className="px-4 py-2 border border-custom rounded-xl hover:bg-accent/10 transition-colors text-primary"
                     >
                         Batalkan
                     </button>
                     <button
                         onClick={onSave}
-                        className="px-6 py-2 bg-accent text-white rounded-xl hover:opacity-90 transition flex items-center gap-2"
+                        disabled={isSaving}
+                        className="
+        px-6 py-2 
+        btn-primary 
+        text-white 
+        rounded-xl 
+        hover:opacity-90 
+        transition 
+        flex items-center gap-2
+        disabled:opacity-60
+        disabled:cursor-not-allowed
+    "
                     >
-                        <Check size={18} />
-                        {lineFormats && lineFormats.length > 0 ? 'Save with AI Format' : 'Simpan'}
+                        {isSaving ? (
+                            <>
+                                <Loader2 size={18} className="animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Check size={18} />
+                                {lineFormats && lineFormats.length > 0
+                                    ? 'Save with AI Format'
+                                    : 'Simpan'}
+                            </>
+                        )}
                     </button>
+
                 </div>
             </div>
         </div>

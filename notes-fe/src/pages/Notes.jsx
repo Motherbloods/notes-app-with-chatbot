@@ -14,16 +14,34 @@ function Notes() {
     const [cleanedContent, setCleanedContent] = useState("");
     const [originalContent, setOriginalContent] = useState("");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const { incrementCounter } = useNotes();
 
     const saveNote = async () => {
-        const result = await saveNoteData(cleanedContent, analysisResult, originalContent);
-        console.log("Simpan note:", result);
-        setShowConfirmation(false);
-        setInputContent("");
-        setCleanedContent("");
-        incrementCounter(analysisResult.category);
-        toast.success('Berhasil Membuat Note')
+        try {
+            setIsSaving(true);
+
+            const result = await saveNoteData(
+                cleanedContent,
+                analysisResult,
+                originalContent
+            );
+
+            console.log("Simpan note:", result);
+
+            setShowConfirmation(false);
+            setInputContent("");
+            setCleanedContent("");
+            incrementCounter(analysisResult.category);
+
+            toast.success('Berhasil Membuat Note');
+
+        } catch (error) {
+            console.error("Gagal save:", error);
+            toast.error("Gagal menyimpan note");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const { textareaRef, handleKeyDown } = useSmartTextarea(inputContent, setInputContent);
@@ -113,7 +131,8 @@ Contoh list:
 Contoh checklist:
 - [ ] Task belum selesai
 - [x] Task selesai"
-            className=" w-full h-96 p-4 bg-secondary resize-none border border-primary rounded-xl text-primary font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent placeholder:text-secondary
+            disabled={isAnalyzing}
+            className=" w-full h-96 p-4 bg-secondary resize-none border border-primary rounded-xl text-primary font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent placeholder:text-secondary disabled:cursor-not-allowed 
       "/>
         <button
             onClick={() => analyzeContent(inputContent)}
@@ -156,6 +175,7 @@ flex items-center gap-2
                 setAnalysisResult((prev) => ({ ...prev, category: cat }))
             }
             onSave={saveNote}
+            isSaving={isSaving}
         />
 
     </div>
