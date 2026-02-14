@@ -118,8 +118,18 @@ function NotesPage() {
                 if (checklistMatch) {
                     if (currentChecklistIndex === checklistIndex) {
                         const newCheckState = checklistMatch[2].toLowerCase() === 'x' ? ' ' : 'x';
-                        currentChecklistIndex++;
-                        return `- [${newCheckState}] ${checklistMatch[3]}`;
+                        const textContent = checklistMatch[3];
+
+                        const textWithoutMetadata = textContent.replace(/\s*<!--completed:.*?-->\s*$/, '').trim();
+
+                        if (newCheckState === 'x') {
+                            const timestamp = new Date().toISOString();
+                            currentChecklistIndex++;
+                            return `- [${newCheckState}] ${textWithoutMetadata} <!--completed:${timestamp}-->`;
+                        } else {
+                            currentChecklistIndex++;
+                            return `- [${newCheckState}] ${textWithoutMetadata}`;
+                        }
                     }
                     currentChecklistIndex++;
                 }

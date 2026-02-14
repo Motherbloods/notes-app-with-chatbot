@@ -242,7 +242,7 @@ function ModalPreview({
                                     {lineFormats && lineFormats.length > 0 ? '✨ AI-Formatted Preview:' : 'Preview:'}
                                 </label>
                                 <div className="bg-secondary p-4 rounded-lg text-sm text-primary max-h-64 overflow-auto whitespace-pre-wrap">
-                                    {inputContent}
+                                    {inputContent.replace(/\s*<!--completed:.*?-->/g, '')}
                                 </div>
                                 {lineFormats && lineFormats.length > 0 && (
                                     <p className="text-xs text-gray-500 mt-2 italic">

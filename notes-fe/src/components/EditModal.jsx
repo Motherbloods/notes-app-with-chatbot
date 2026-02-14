@@ -1,4 +1,4 @@
-import { React, useState } from "react";
+import { React, useState, useEffect } from "react";
 import { X, Check, AlertTriangle, CheckCircle2, Code2, RefreshCw, Loader2, FileText, Sparkles } from "lucide-react";
 import useSmartTextarea from "../hooks/useSmartTextarea";
 import toast from "react-hot-toast";
@@ -14,6 +14,14 @@ function EditModal({ onClose, onSave, initialData }) {
     const [isSaving, setIsSaving] = useState(false);
 
     const { textareaRef, handleKeyDown } = useSmartTextarea(inputContent, setInputContent);
+
+    // Bersihkan metadata saat modal dibuka
+    useEffect(() => {
+        if (defaultData.content) {
+            const cleanedContent = defaultData.content.replace(/\s*<!--completed:.*?-->/g, '');
+            setInputContent(cleanedContent);
+        }
+    }, [defaultData.content]);
 
     if (!initialData) return null;
 
@@ -291,6 +299,18 @@ function EditModal({ onClose, onSave, initialData }) {
                                             : 'bg-white border-gray-300 cursor-text focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                                 }`}
                             rows={14}
+                            style={{
+                                whiteSpace: 'pre-wrap',
+                                wordWrap: 'break-word'
+                            }}
+                            onFocus={(e) => {
+                                if (!showOriginal && !showSuggested && !isSaving) {
+                                    const cleanedContent = e.target.value.replace(/\s*<!--completed:.*?-->/g, '');
+                                    if (cleanedContent !== e.target.value) {
+                                        setInputContent(cleanedContent);
+                                    }
+                                }
+                            }}
                         />
 
                         {/* Comparison Note */}

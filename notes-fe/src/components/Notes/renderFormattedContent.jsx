@@ -56,7 +56,7 @@ function renderFormattedContent(note, toggleChecklistItem) {
       flushList();
 
       const isChecked = checklistMatch[2].toLowerCase() === 'x';
-      const text = checklistMatch[3];
+      const text = checklistMatch[3].replace(/\s*<!--completed:.*?-->\s*$/, '').trim();
       const currentChecklistIndex = checklistCounter;
       checklistCounter++;
 
