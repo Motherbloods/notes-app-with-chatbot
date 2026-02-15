@@ -5,6 +5,7 @@ const { generateEmbedding } = require("./embbeding.service.js");
 const createNoteService = async (noteData) => {
   try {
     const {
+      userId,
       content,
       contentType,
       category,
@@ -31,6 +32,10 @@ const createNoteService = async (noteData) => {
       throw new Error("Missing required fields: content and category");
     }
 
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+
     if (confidence < 0 || confidence > 1) {
       throw new Error("Invalid confidence value (must be between 0 and 1)");
     }
@@ -39,6 +44,7 @@ const createNoteService = async (noteData) => {
     const embeddingVector = embedding.data[0].embedding;
 
     const newNote = new Note({
+      userId,
       content,
       originalContent: originalContent || null,
       wasReformatted,
@@ -60,10 +66,10 @@ const createNoteService = async (noteData) => {
   }
 };
 
-const getCategoriesNotesCountService = async () => {
+const getCategoriesNotesCountService = async (userId) => {
   try {
     const counts = await Note.aggregate([
-      { $match: { deletedAt: null } },
+      { $match: { deletedAt: null, userId: userId } },
       { $group: { _id: "$category", count: { $sum: 1 } } },
       { $project: { category: "$_id", count: 1, _id: 0 } },
     ]);
@@ -74,9 +80,12 @@ const getCategoriesNotesCountService = async () => {
   }
 };
 
-const getNotesByCategoryService = async (categoryKey) => {
+const getNotesByCategoryService = async (categoryKey, userId) => {
   try {
-    const notes = await Note.find({ category: categoryKey }).sort({
+    const notes = await Note.find({
+      category: categoryKey,
+      userId: userId,
+    }).sort({
       timestamp: -1,
     });
     return notes;
@@ -86,8 +95,17 @@ const getNotesByCategoryService = async (categoryKey) => {
   }
 };
 
-const updateNoteService = async (noteId, updateData) => {
+const updateNoteService = async (noteId, updateData, userId) => {
   try {
+    const existingNote = await Note.findOne({
+      _id: noteId,
+      userId: userId,
+    });
+
+    if (!existingNote) {
+      throw new Error("Note not found or unauthorized");
+    }
+
     const shouldReanalyze = updateData.reanalyze === true;
 
     let updatedFields = { ...updateData };
@@ -124,8 +142,17 @@ const updateNoteService = async (noteId, updateData) => {
   }
 };
 
-const deleteNoteByIdService = async (noteId) => {
+const deleteNoteByIdService = async (noteId, userId) => {
   try {
+    const existingNote = await Note.findOne({
+      _id: noteId,
+      userId: userId,
+    });
+
+    if (!existingNote) {
+      throw new Error("Note not found or unauthorized");
+    }
+
     await Note.findByIdAndUpdate(noteId, {
       deletedAt: new Date(),
     });

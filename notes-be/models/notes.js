@@ -4,8 +4,7 @@ const noteSchema = new mongoose.Schema(
   {
     userId: {
       type: String,
-      default: "motherbloodss",
-      set: (v) => v || "motherbloodss",
+      required: true,
       index: true,
     },
 
