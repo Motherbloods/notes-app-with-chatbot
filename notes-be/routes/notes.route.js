@@ -8,6 +8,9 @@ const {
   updateNote,
   deleteNoteById,
 } = require("../controllers/notes.controller.js");
+const { authMiddleware } = require("../middleware/auth.middleware.js");
+
+router.use(authMiddleware);
 
 router.post("/notes", createNote);
 router.get("/notes/count", getCategoriesNotesCount);
