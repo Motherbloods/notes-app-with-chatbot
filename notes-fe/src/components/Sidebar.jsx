@@ -1,17 +1,22 @@
 import SearchBar from "./Search";
-import { Save, MessageSquare, Menu, X } from "lucide-react";
+import { Save, MessageSquare, Menu, X, LogOut } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { logout as logoutApi } from "../api/auth"; // sesuaikan path
 import categories from "../config/categories";
 import ThemeToggle from "./ThemeToggle";
+import { useAuth } from "../context/AuthContext";
 
 function Sidebar({ notesCount }) {
     const [searchInput, setSearchInput] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [isOpen, setIsOpen] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const isNavigatingToNote = useRef(false);
+
+    const { logout } = useAuth();
 
     useEffect(() => {
         if (
@@ -61,6 +66,17 @@ function Sidebar({ notesCount }) {
         [searchInput, navigate],
     );
 
+    const handleLogout = async () => {
+        setIsLoggingOut(true);
+        try {
+            await logout();
+        } catch (err) {
+            console.error("Logout failed:", err);
+        } finally {
+            setIsLoggingOut(false);
+        }
+    };
+
     return (
         <>
             <button
@@ -101,8 +117,8 @@ function Sidebar({ notesCount }) {
   `}
             >
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-primary">Second Brain</h1>
-                    <div className="flex items-center gap-2">
+                    <h1 className="text-[23px] font-bold text-primary">Second Brain</h1>
+                    <div className="flex items-center gap-[6px]">
                         <ThemeToggle />
                         <button
                             onClick={() => setIsOpen(false)}
@@ -110,8 +126,38 @@ function Sidebar({ notesCount }) {
                         >
                             <X size={20} />
                         </button>
+                        <button
+                            onClick={handleLogout}
+                            disabled={isLoggingOut}
+                            title="Logout"
+                            className="p-2 rounded-lg hover:bg-secondary transition relative flex items-center justify-center"
+                        >
+                            {isLoggingOut ? (
+                                <svg
+                                    className="animate-spin h-5 w-5 text-primary"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                    ></path>
+                                </svg>
+                            ) : (
+                                <LogOut size={20} className="text-primary" />
+                            )}
+                        </button>
                     </div>
-
                 </div>
 
                 <NavLink
