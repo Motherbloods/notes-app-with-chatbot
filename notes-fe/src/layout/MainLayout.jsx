@@ -1,7 +1,6 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { useNotes } from "../context/NotesContext";
-import { Toaster } from "react-hot-toast";
 
 function MainLayout() {
     const { notesCount } = useNotes();
@@ -13,7 +12,6 @@ function MainLayout() {
             <div className="flex-1 p-6 overflow-hidden bg-primary">
                 <Outlet />
             </div>
-            <Toaster position="top-right" reverseOrder={false} />
         </div>
     );
 }

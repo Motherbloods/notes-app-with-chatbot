@@ -7,6 +7,7 @@ import { AuthProvider } from "./context/AuthContext.jsx"
 import Login from "./pages/Login.jsx"
 import ProtectedRoute from "./components/ProtectedRoute.jsx"
 import PublicRoute from "./components/PublicRoute.jsx"
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
@@ -14,17 +15,23 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <NotesProvider>
+            <Toaster position="top-right" reverseOrder={false} />
             <Routes>
-              <Route path="/login" element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              } />
-              <Route element={
-                <ProtectedRoute>
-                  <MainLayout />
-                </ProtectedRoute>
-              }>
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <Login />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <MainLayout />
+                  </ProtectedRoute>
+                }
+              >
                 {routes.map((route, index) => {
                   return route.redirectTo ? (
                     <Route
@@ -33,11 +40,8 @@ function App() {
                       element={<Navigate to={route.redirectTo} />}
                     />
                   ) : (
-                    <Route
-                      key={index}
-                      path={route.path}
-                      element={route.element} />
-                  )
+                    <Route key={index} path={route.path} element={route.element} />
+                  );
                 })}
               </Route>
             </Routes>
@@ -45,7 +49,7 @@ function App() {
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
-  )
+  );
 }
 
 export default App
