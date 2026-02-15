@@ -1,7 +1,7 @@
 const app = require("./utils/utils");
 const connectDB = require("./utils/db");
 require("dotenv").config();
-
+require("./bot/telegram-bot");
 (async () => {
   try {
     await connectDB();
