@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
-const User = require("../models/user.model");
-const LoginToken = require("../models/login-token.model");
+const User = require("../models/user");
+const LoginToken = require("../models/login-token");
 
 const requestLoginService = async () => {
   const loginToken = uuidv4();
