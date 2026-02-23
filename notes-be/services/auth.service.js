@@ -123,6 +123,7 @@ const loginWithGoogleService = async (tokenId) => {
       if (user) {
         user.googleId = googleId;
         user.avatar = picture;
+        user.provider = "google";
         await user.save();
 
         console.log("🔗 Google linked to existing user:", user._id);
@@ -143,7 +144,14 @@ const loginWithGoogleService = async (tokenId) => {
       console.log("👤 New Google user created:", user._id);
     }
 
-    return user;
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    return {
+      user,
+      token,
+    };
   } catch (error) {
     console.error("❌ Google auth error:", error.message);
     throw new Error("Google authentication failed");
