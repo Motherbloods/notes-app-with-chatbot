@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getCategoriesNotesCount } from '../api/notes';
+import { useAuth } from './AuthContext'; // ✅ Import useAuth
 
 const NotesContext = createContext();
 
@@ -14,6 +15,7 @@ export const useNotes = () => {
 export const NotesProvider = ({ children }) => {
     const [notesCount, setNotesCount] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const { user, loading: authLoading } = useAuth();
 
     const fetchCounter = useCallback(async () => {
         try {
@@ -28,8 +30,10 @@ export const NotesProvider = ({ children }) => {
     }, []);
 
     useEffect(() => {
-        fetchCounter();
-    }, [fetchCounter]);
+        if (!authLoading && user) {
+            fetchCounter();
+        }
+    }, [authLoading, user, fetchCounter]);
 
     const incrementCounter = useCallback((category) => {
         setNotesCount(prev => {
