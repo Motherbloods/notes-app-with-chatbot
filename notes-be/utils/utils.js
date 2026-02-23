@@ -25,11 +25,11 @@ app.get("/", (req, res) => {
   res.send("Backend Notes API is running!");
 });
 
+app.use("/api", authRoutes);
+app.use("/api", telegramRoutes);
 app.use("/api", analyzingRoutes);
 app.use("/api", notesRoutes);
 app.use("/api", embeddingRoutes);
 app.use("/api", chatRoutes);
-app.use("/api", authRoutes);
-app.use("/api", telegramRoutes);
 
 module.exports = app;

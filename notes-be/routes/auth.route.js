@@ -6,10 +6,12 @@ const {
   logout,
   verifyAuth,
 } = require("../controllers/auth.controller");
+const { authMiddleware } = require("../middleware/auth.middleware.js");
 
 router.post("/request-login", requestLogin);
 router.post("/verify-login", verifyLoginToken);
-router.post("/logout", logout);
-router.get("/verify", verifyAuth);
+
+router.post("/logout", authMiddleware, logout);
+router.get("/verify", authMiddleware, verifyAuth);
 
 module.exports = router;
