@@ -5,6 +5,21 @@ const LoginToken = require("../models/login-token");
 const { OAuth2Client } = require("google-auth-library");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const generateToken = (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+};
+
+const formatUser = (user) => ({
+  _id: user._id,
+  username: user.username,
+  firstName: user.firstName || null,
+  lastName: user.lastName || null,
+  email: user.email || null,
+  avatar: user.avatar || null,
+  provider: user.provider,
+  telegramId: user.telegramId || null,
+  googleId: user.googleId || null,
+});
 
 const requestLoginService = async () => {
   const loginToken = uuidv4();
@@ -46,26 +61,21 @@ const verifyLoginTokenService = async (loginToken) => {
   }
 
   if (tokenDoc.status === "used" && tokenDoc.telegramId) {
-    const user = await User.findOne({ telegramId: tokenDoc.telegramId });
+    const user = await User.findOne({ telegramId: tokenDoc.telegramId }).select(
+      "-__v",
+    );
 
     if (!user) {
       throw { status: 404, message: "User not found" };
     }
 
-    const jwtToken = jwt.sign(
-      { userId: user._id, telegramId: user.telegramId },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
+    const jwtToken = generateToken(user._id);
 
     await LoginToken.deleteOne({ _id: tokenDoc._id });
 
     return {
       jwtToken,
-      user: {
-        telegramId: user.telegramId,
-        username: user.username,
-      },
+      user: formatUser(user),
     };
   }
 
@@ -83,10 +93,7 @@ const verifyAuthService = async (userId) => {
     throw { status: 404, message: "User not found" };
   }
 
-  return {
-    telegramId: user.telegramId,
-    username: user.username,
-  };
+  return formatUser(user);
 };
 
 const loginWithGoogleService = async (tokenId) => {
@@ -115,15 +122,15 @@ const loginWithGoogleService = async (tokenId) => {
       family_name,
     } = payload;
 
-    let user = await User.findOne({ googleId });
+    let user = await User.findOne({ googleId }).select("-__v");
 
     if (!user && email) {
-      user = await User.findOne({ email });
+      user = await User.findOne({ email }).select("-__v");
 
       if (user) {
         user.googleId = googleId;
         user.avatar = picture;
-        user.provider = "google";
+        if (!user.provider) user.provider = "google";
         await user.save();
 
         console.log("🔗 Google linked to existing user:", user._id);
@@ -135,22 +142,20 @@ const loginWithGoogleService = async (tokenId) => {
         googleId,
         email,
         username: name || email,
-        firstName: given_name,
-        lastName: family_name,
-        avatar: picture,
+        firstName: given_name || null,
+        lastName: family_name || null,
+        avatar: picture || null,
         provider: "google",
       });
 
       console.log("👤 New Google user created:", user._id);
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    const token = generateToken(user._id);
 
     return {
-      user,
       token,
+      user: formatUser(user),
     };
   } catch (error) {
     console.error("❌ Google auth error:", error.message);
