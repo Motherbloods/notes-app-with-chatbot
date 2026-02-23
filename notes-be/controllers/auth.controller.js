@@ -5,6 +5,17 @@ const {
   loginWithGoogleService,
 } = require("../services/auth.service");
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  ...(process.env.NODE_ENV === "production" && {
+    domain: ".motherbloodss.site",
+  }),
+};
+
 const requestLogin = async (req, res) => {
   try {
     const data = await requestLoginService();
@@ -25,14 +36,7 @@ const verifyLoginToken = async (req, res) => {
       return res.status(202).json(result);
     }
 
-    res.cookie("auth_token", result.jwtToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      domain: ".motherbloodss.site",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("auth_token", result.jwtToken, cookieOptions);
 
     res.status(200).json({ message: "Login successful", user: result.user });
   } catch (error) {
@@ -45,13 +49,7 @@ const verifyLoginToken = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    res.clearCookie("auth_token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-      domain: process.env.DOMAIN,
-      path: "/",
-    });
+    res.clearCookie("auth_token", cookieOptions);
     res.status(200).json({ message: "Logout successful" });
   } catch (error) {
     console.error("Logout error:", error);
@@ -83,9 +81,10 @@ const loginGoogle = async (req, res) => {
 
     const { user, token } = await loginWithGoogleService(idToken);
 
+    res.cookie("auth_token", token, cookieOptions);
+
     return res.status(200).json({
       success: true,
-      token,
       user,
     });
   } catch (err) {
