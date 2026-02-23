@@ -2,6 +2,7 @@ const {
   requestLoginService,
   verifyLoginTokenService,
   verifyAuthService,
+  loginWithGoogleService,
 } = require("../services/auth.service");
 
 const requestLogin = async (req, res) => {
@@ -69,5 +70,47 @@ const verifyAuth = async (req, res) => {
       .json({ error: error.message || "Invalid token" });
   }
 };
+const loginGoogle = async (req, res) => {
+  try {
+    const { idToken } = req.body;
 
-module.exports = { requestLogin, verifyLoginToken, logout, verifyAuth };
+    if (!idToken) {
+      return res.status(400).json({
+        error: "Google ID token is required",
+      });
+    }
+
+    const user = await loginWithGoogleService(idToken);
+
+    if (!user) {
+      return res.status(401).json({
+        error: "Failed to authenticate user",
+      });
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    return res.status(200).json({
+      success: true,
+      token,
+      user,
+    });
+  } catch (err) {
+    console.error("❌ Google login error:", err);
+
+    return res.status(401).json({
+      success: false,
+      error: "Invalid or expired Google token",
+    });
+  }
+};
+
+module.exports = {
+  requestLogin,
+  verifyLoginToken,
+  logout,
+  verifyAuth,
+  loginGoogle,
+};

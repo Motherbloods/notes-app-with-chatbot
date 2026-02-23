@@ -5,11 +5,13 @@ const {
   verifyLoginToken,
   logout,
   verifyAuth,
+  loginGoogle,
 } = require("../controllers/auth.controller");
 const { authMiddleware } = require("../middleware/auth.middleware.js");
 
 router.post("/request-login", requestLogin);
 router.post("/verify-login", verifyLoginToken);
+router.post("/google", loginGoogle);
 
 router.post("/logout", authMiddleware, logout);
 router.get("/verify", authMiddleware, verifyAuth);
