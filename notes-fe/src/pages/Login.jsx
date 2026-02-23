@@ -142,9 +142,6 @@ function Login() {
                                             const idToken = credentialResponse.credential;
                                             const res = await loginGoogle(idToken);
 
-                                            const token = res.token || res.data?.token;
-                                            if (token) localStorage.setItem("token", token);
-
                                             setUser(res.user || res.data?.user);
 
                                             toast.success("Login berhasil");
