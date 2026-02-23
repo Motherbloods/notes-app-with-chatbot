@@ -2,6 +2,9 @@ const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const User = require("../models/user");
 const LoginToken = require("../models/login-token");
+const { OAuth2Client } = require("google-auth-library");
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const requestLoginService = async () => {
   const loginToken = uuidv4();
@@ -86,8 +89,70 @@ const verifyAuthService = async (userId) => {
   };
 };
 
+const loginWithGoogleService = async (tokenId) => {
+  try {
+    if (!tokenId) {
+      throw new Error("Google tokenId is required");
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: tokenId,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload) {
+      throw new Error("Invalid Google token payload");
+    }
+
+    const {
+      sub: googleId,
+      email,
+      name,
+      picture,
+      given_name,
+      family_name,
+    } = payload;
+
+    let user = await User.findOne({ googleId });
+
+    if (!user && email) {
+      user = await User.findOne({ email });
+
+      if (user) {
+        user.googleId = googleId;
+        user.avatar = picture;
+        await user.save();
+
+        console.log("🔗 Google linked to existing user:", user._id);
+      }
+    }
+
+    if (!user) {
+      user = await User.create({
+        googleId,
+        email,
+        username: name || email,
+        firstName: given_name,
+        lastName: family_name,
+        avatar: picture,
+        provider: "google",
+      });
+
+      console.log("👤 New Google user created:", user._id);
+    }
+
+    return user;
+  } catch (error) {
+    console.error("❌ Google auth error:", error.message);
+    throw new Error("Google authentication failed");
+  }
+};
+
 module.exports = {
   requestLoginService,
   verifyLoginTokenService,
   verifyAuthService,
+  loginWithGoogleService,
 };
