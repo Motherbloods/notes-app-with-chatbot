@@ -1,5 +1,5 @@
 const TelegramBot = require("node-telegram-bot-api");
-const { confirmLoginBot } = require("../services/telegram.service");
+const { confirmLoginService } = require("../services/telegram.service");
 const messages = require("../utils/messages");
 
 const token = process.env.TOKEN;
@@ -12,11 +12,14 @@ bot.onText(/\/start(.*)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const loginToken = match[1].trim();
 
+  console.log("🤖 Bot /start command:", { chatId, loginToken });
+
   if (!loginToken) {
     return bot.sendMessage(chatId, messages.welcome);
   }
 
   if (!uuidRegex.test(loginToken)) {
+    console.log("❌ Invalid UUID format:", loginToken);
     return bot.sendMessage(chatId, messages.invalidLink);
   }
 
@@ -28,17 +31,31 @@ bot.onText(/\/start(.*)/, async (msg, match) => {
     loginToken,
   };
 
-  const result = await confirmLoginBot(telegramData);
+  console.log("📋 Telegram data:", telegramData);
 
-  if (result.success) {
+  try {
+    const result = await confirmLoginService(telegramData);
+    console.log("✅ Login confirmed:", result);
     bot.sendMessage(chatId, messages.loginSuccess);
-  } else if (result.error === "Token expired") {
-    bot.sendMessage(chatId, messages.tokenExpired);
-  } else if (result.error === "Token already used") {
-    bot.sendMessage(chatId, messages.tokenUsed);
-  } else {
-    bot.sendMessage(chatId, messages.generalError);
+  } catch (error) {
+    console.error("❌ Bot error:", {
+      status: error.status,
+      message: error.message,
+      stack: error.stack,
+    });
+
+    if (error.message === "Token expired") {
+      bot.sendMessage(chatId, messages.tokenExpired);
+    } else if (error.message === "Token already used") {
+      bot.sendMessage(chatId, messages.tokenUsed);
+    } else if (error.message === "Invalid token") {
+      bot.sendMessage(chatId, messages.invalidLink);
+    } else {
+      bot.sendMessage(chatId, messages.generalError);
+    }
   }
 });
+
+console.log("🤖 Telegram bot started successfully");
 
 module.exports = bot;

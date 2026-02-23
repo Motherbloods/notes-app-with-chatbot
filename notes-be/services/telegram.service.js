@@ -1,30 +1,5 @@
-const axios = require("axios");
 const User = require("../models/user");
 const LoginToken = require("../models/login-token");
-
-const urlBackend = process.env.URL_BACKEND || "http://localhost:3000/api";
-
-const confirmLoginBot = async ({
-  loginToken,
-  telegramId,
-  username,
-  firstName,
-  lastName,
-}) => {
-  try {
-    await axios.post(`${urlBackend}/confirm-login`, {
-      loginToken,
-      telegramId,
-      username,
-      firstName,
-      lastName,
-    });
-    return { success: true };
-  } catch (error) {
-    const errorMsg = error.response?.data?.error || "Unknown error";
-    return { success: false, error: errorMsg };
-  }
-};
 
 const confirmLoginService = async ({
   loginToken,
@@ -33,17 +8,31 @@ const confirmLoginService = async ({
   firstName,
   lastName,
 }) => {
+  console.log("🔄 confirmLoginService called:", {
+    loginToken,
+    telegramId,
+    username,
+  });
+
   if (!loginToken || !telegramId) {
     throw { status: 400, message: "Login token and Telegram ID required" };
   }
 
   const tokenDoc = await LoginToken.findOne({ token: loginToken });
-  if (!tokenDoc) throw { status: 404, message: "Invalid token" };
+  if (!tokenDoc) {
+    console.log("❌ Token not found in DB:", loginToken);
+    throw { status: 404, message: "Invalid token" };
+  }
 
-  if (tokenDoc.status !== "pending")
+  console.log("📋 Token found with status:", tokenDoc.status);
+
+  if (tokenDoc.status !== "pending") {
+    console.log("❌ Token status not pending:", tokenDoc.status);
     throw { status: 400, message: "Token already used" };
+  }
 
   if (tokenDoc.expiresAt < new Date()) {
+    console.log("❌ Token expired:", tokenDoc.expiresAt);
     tokenDoc.status = "expired";
     await tokenDoc.save();
     throw { status: 401, message: "Token expired" };
@@ -51,17 +40,23 @@ const confirmLoginService = async ({
 
   let user = await User.findOne({ telegramId });
   if (!user) {
+    console.log("👤 Creating new user for telegramId:", telegramId);
     user = await User.create({
       telegramId,
       username: username || `user_${telegramId}`,
       firstName,
       lastName,
     });
+    console.log("✅ User created:", user._id);
+  } else {
+    console.log("👤 Existing user found:", user._id);
   }
 
   tokenDoc.status = "used";
   tokenDoc.telegramId = telegramId;
   await tokenDoc.save();
+
+  console.log("✅ Login confirmed successfully for user:", user.username);
 
   return {
     message: "Login confirmed successfully",
@@ -72,4 +67,4 @@ const confirmLoginService = async ({
   };
 };
 
-module.exports = { confirmLoginBot, confirmLoginService };
+module.exports = { confirmLoginService };
