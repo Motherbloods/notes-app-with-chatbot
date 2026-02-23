@@ -8,13 +8,19 @@ const conversationsSchema = new mongoose.Schema(
     },
     userId: {
       type: String,
-      default: "motherbloodss",
+      required: true,
     },
-    lastMessage: { type: String },
-    updatedAt: { type: Date, default: Date.now },
+    lastMessage: {
+      type: String,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true },
 );
+conversationsSchema.index({ userId: 1, updatedAt: -1 });
 
 const Conversation = mongoose.model("ConversationNotes", conversationsSchema);
 
