@@ -26,8 +26,9 @@ const verifyLoginToken = async (req, res) => {
 
     res.cookie("auth_token", result.jwtToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
+      domain: ".motherbloodss.site",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -46,7 +47,8 @@ const logout = async (req, res) => {
     res.clearCookie("auth_token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "none",
+      domain: process.env.DOMAIN,
       path: "/",
     });
     res.status(200).json({ message: "Logout successful" });
@@ -58,8 +60,7 @@ const logout = async (req, res) => {
 
 const verifyAuth = async (req, res) => {
   try {
-    const token = req.cookies.auth_token;
-    const user = await verifyAuthService(token);
+    const user = await verifyAuthService(req.userId);
     res.status(200).json({ user });
   } catch (error) {
     console.error("Token verification error:", error);

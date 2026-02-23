@@ -27,21 +27,32 @@ const sendMessageService = async ({
   conversationId,
   role,
   content,
-  userId = "motherbloodss",
+  userId,
 }) => {
   try {
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+
     let conversation;
 
     if (conversationId) {
-      conversation = await Conversations.findById(conversationId);
-      if (!conversation) throw new Error("Conversation not found");
+      conversation = await Conversations.findOne({
+        _id: conversationId,
+        userId: userId,
+      });
+
+      if (!conversation) {
+        throw new Error("Conversation not found or access denied");
+      }
     } else {
       conversation = new Conversations();
       const title = await generateTitleFromLLM(content);
       conversation.title = title;
       conversation.userId = userId;
-
       await conversation.save();
+
+      console.log(`✅ New conversation created for userId: ${userId}`);
     }
 
     const message = new Message({
@@ -67,7 +78,9 @@ const sendMessageService = async ({
         .limit(50)
         .lean();
 
-      console.log(`[ChatBot] Fetched ${allNotes.length} notes for context`);
+      console.log(
+        `[ChatBot] Fetched ${allNotes.length} notes for userId: ${userId}`,
+      );
 
       const botContent = await generateBotResponse(content, history, allNotes);
 
@@ -94,11 +107,20 @@ const sendMessageService = async ({
   }
 };
 
-const getConversationsService = async (userId = "motherbloodss") => {
+const getConversationsService = async (userId) => {
   try {
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+
     const conversations = await Conversations.find({ userId }).sort({
       updatedAt: -1,
     });
+
+    console.log(
+      `📋 Found ${conversations.length} conversations for userId: ${userId}`,
+    );
+
     return conversations;
   } catch (error) {
     console.error("Error in getConversationsService:", error);
@@ -106,11 +128,32 @@ const getConversationsService = async (userId = "motherbloodss") => {
   }
 };
 
-const getMessagesService = async (conversationId) => {
+const getMessagesService = async (conversationId, userId) => {
   try {
+    if (!conversationId) {
+      throw new Error("Conversation ID is required");
+    }
+
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+
+    const conversation = await Conversations.findOne({
+      _id: conversationId,
+      userId: userId,
+    });
+
+    if (!conversation) {
+      throw new Error("Conversation not found or access denied");
+    }
+
     const messages = await Message.find({ conversationId })
       .sort({ createdAt: 1 })
       .select("role content createdAt -_id");
+
+    console.log(
+      `💬 Found ${messages.length} messages for conversationId: ${conversationId}`,
+    );
 
     return messages.map((msg) => ({
       role: msg.role,

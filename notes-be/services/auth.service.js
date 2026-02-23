@@ -69,13 +69,12 @@ const verifyLoginTokenService = async (loginToken) => {
   throw { status: 400, message: "Invalid token status" };
 };
 
-const verifyAuthService = async (token) => {
-  if (!token) {
+const verifyAuthService = async (userId) => {
+  if (!userId) {
     throw { status: 401, message: "Unauthorized" };
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  const user = await User.findById(decoded.userId).select("-__v");
+  const user = await User.findById(userId).select("-__v");
 
   if (!user) {
     throw { status: 404, message: "User not found" };

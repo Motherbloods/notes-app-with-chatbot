@@ -4,16 +4,21 @@ const {
   searchHybridNotesService,
 } = require("../services/embbeding.service.js");
 
-const keywordSearch = async (query, limit = 20) => {
+const keywordSearch = async (query, userId, limit = 20) => {
   try {
     const regex = new RegExp(query, "i");
 
     const results = await Note.find({
+      userId: userId,
+      deletedAt: null,
       $or: [{ content: regex }],
     })
       .sort({ createdAt: -1 })
       .limit(limit);
 
+    console.log(
+      `🔍 Keyword search found ${results.length} results for userId: ${userId}`,
+    );
     return results;
   } catch (error) {
     console.error("Keyword search error:", error);
@@ -24,7 +29,7 @@ const keywordSearch = async (query, limit = 20) => {
 const searchNotes = async (req, res) => {
   try {
     const query = req.query.q?.trim();
-
+    const userId = req.userId;
     if (!query) {
       return res.status(400).json({
         success: false,
@@ -32,10 +37,21 @@ const searchNotes = async (req, res) => {
       });
     }
 
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized - User ID not found",
+      });
+    }
+
     const mode = ["semantic", "hybrid"].includes(req.query.mode)
       ? req.query.mode
       : "hybrid";
-    console.log("ini mode", mode);
+
+    console.log(
+      `🔍 Search mode: ${mode}, userId: ${userId}, query: "${query}"`,
+    );
+
     const topK = Number.isInteger(Number(req.query.topK))
       ? Number(req.query.topK)
       : 10;
@@ -47,21 +63,35 @@ const searchNotes = async (req, res) => {
     let result;
 
     if (mode === "semantic") {
-      const notes = await Note.find({ deletedAt: null })
+      const notes = await Note.find({
+        userId: userId,
+        deletedAt: null,
+      })
         .select("+embedding")
         .lean();
+
+      console.log(`📊 Semantic search pool: ${notes.length} notes`);
+
       result = await searchSemanticNotesService(
         query,
         notes,
         topK,
         minSimilarity,
       );
-      console.log(result);
     } else {
-      const keywordResults = await keywordSearch(query, topK * 2);
-      const notes = await Note.find({ deletedAt: null })
+      const keywordResults = await keywordSearch(query, userId, topK * 2);
+
+      const notes = await Note.find({
+        userId: userId,
+        deletedAt: null,
+      })
         .select("+embedding")
         .lean();
+
+      console.log(
+        `📊 Hybrid search: ${keywordResults.length} keyword + ${notes.length} semantic pool`,
+      );
+
       result = await searchHybridNotesService(
         query,
         keywordResults,
@@ -70,9 +100,11 @@ const searchNotes = async (req, res) => {
       );
     }
 
+    console.log(`✅ Search complete: ${result.length} results returned`);
+
     return res.json(result);
   } catch (error) {
-    console.error("Search API error:", error);
+    console.error("❌ Search API error:", error);
 
     return res.status(500).json({
       success: false,
