@@ -17,3 +17,7 @@ export const logout = async () => {
 export const verifyAuth = async () => {
   return await client.get("/verify");
 };
+
+export const loginGoogle = async (idToken) => {
+  return await client.post("/google", { idToken });
+};
