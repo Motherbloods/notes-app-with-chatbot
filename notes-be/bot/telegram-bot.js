@@ -3,7 +3,47 @@ const { confirmLoginService } = require("../services/telegram.service");
 const messages = require("../utils/messages");
 
 const token = process.env.TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+
+if (!token) {
+  console.error("❌ TELEGRAM TOKEN NOT FOUND");
+}
+
+const bot = new TelegramBot(token, {
+  polling: {
+    autoStart: false,
+    interval: 300,
+    params: {
+      timeout: 10,
+    },
+  },
+});
+
+async function startBot() {
+  try {
+    await bot.startPolling();
+    console.log("🤖 Telegram bot started successfully");
+  } catch (err) {
+    console.error("❌ Failed to start polling:", err.message);
+  }
+}
+
+startBot();
+
+bot.on("polling_error", (err) => {
+  console.error("⚠️ Polling error:", err.message);
+});
+
+bot.on("error", (err) => {
+  console.error("⚠️ Telegram error:", err.message);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("⚠️ Unhandled Rejection:", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("⚠️ Uncaught Exception:", err);
+});
 
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
