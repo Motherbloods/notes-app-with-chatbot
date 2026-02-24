@@ -43,3 +43,9 @@ jobs:
           --restart unless-stopped \
           --network n8n-network \
           notes-fe
+
+      - name: Cleanup Env Files
+        if: always()
+        run: |
+          rm -f notes-be/.env
+          rm -f notes-fe/.env
