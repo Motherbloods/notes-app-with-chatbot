@@ -43,7 +43,10 @@ jobs:
 
       - name: Build Frontend
         run: |
+          source /home/motherbloodss/Desktop/notes/notes-fe/.env
           docker build --no-cache \
+            --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL \
+            --build-arg VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID \
             -t notes-fe \
             /home/motherbloodss/Desktop/notes/notes-fe
 
