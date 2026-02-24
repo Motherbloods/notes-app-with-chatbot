@@ -37,7 +37,7 @@ jobs:
       - name: Restart Frontend
         run: |
           docker network create n8n-network || true
-          docker rm -f notes-fe || true
+          docker rm -f notes || true
           docker run -d \
           --name notes \
           -p 5174:5174 \
