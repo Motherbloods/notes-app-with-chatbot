@@ -9,9 +9,6 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      devOptions: {
-        enabled: true,
-      },
       workbox: {
         cleanupOutdatedCaches: true,
         skipWaiting: true,
