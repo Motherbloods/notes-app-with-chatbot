@@ -12,6 +12,18 @@ export default defineConfig({
       devOptions: {
         enabled: true,
       },
+      workbox: {
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+        navigateFallbackDenylist: [/^\/api/],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/notes-api\.motherbloodss\.site\/api\/.*/i,
+            handler: "NetworkOnly",
+          },
+        ],
+      },
       manifest: {
         name: "MindGarden — Smart AI Notes",
         short_name: "MindGarden",
