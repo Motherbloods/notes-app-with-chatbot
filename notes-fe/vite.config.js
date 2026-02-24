@@ -7,50 +7,50 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    VitePWA({
-      registerType: "autoUpdate",
-      workbox: {
-        cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true,
-        navigateFallbackDenylist: [/^\/api/],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/notes\.motherbloodss\.site\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              networkTimeoutSeconds: 10,
-            },
-          },
-        ],
-      },
-      manifest: {
-        name: "MindGarden — Smart AI Notes",
-        short_name: "MindGarden",
-        description: "AI-powered smart note taking app",
-        theme_color: "#0f172a",
-        background_color: "#0f172a",
-        display: "standalone",
-        start_url: "/notes/new",
-        icons: [
-          {
-            src: "/pwa-192.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "/pwa-512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "/pwa-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-        ],
-      },
-    }),
+    // VitePWA({
+    //   registerType: "autoUpdate",
+    //   workbox: {
+    //     cleanupOutdatedCaches: true,
+    //     skipWaiting: true,
+    //     clientsClaim: true,
+    //     navigateFallbackDenylist: [/^\/api/],
+    //     runtimeCaching: [
+    //       {
+    //         urlPattern: /^https:\/\/notes\.motherbloodss\.site\/.*/i,
+    //         handler: "NetworkFirst",
+    //         options: {
+    //           networkTimeoutSeconds: 10,
+    //         },
+    //       },
+    //     ],
+    //   },
+    //   manifest: {
+    //     name: "MindGarden — Smart AI Notes",
+    //     short_name: "MindGarden",
+    //     description: "AI-powered smart note taking app",
+    //     theme_color: "#0f172a",
+    //     background_color: "#0f172a",
+    //     display: "standalone",
+    //     start_url: "/notes/new",
+    //     icons: [
+    //       {
+    //         src: "/pwa-192.png",
+    //         sizes: "192x192",
+    //         type: "image/png",
+    //       },
+    //       {
+    //         src: "/pwa-512.png",
+    //         sizes: "512x512",
+    //         type: "image/png",
+    //       },
+    //       {
+    //         src: "/pwa-512.png",
+    //         sizes: "512x512",
+    //         type: "image/png",
+    //         purpose: "maskable",
+    //       },
+    //     ],
+    //   },
+    // }),
   ],
 });
