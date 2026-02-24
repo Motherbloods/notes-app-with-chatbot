@@ -53,4 +53,15 @@ export default defineConfig({
     //   },
     // }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          axios: ["axios"],
+          google: ["@react-oauth/google"],
+        },
+      },
+    },
+  },
 });
