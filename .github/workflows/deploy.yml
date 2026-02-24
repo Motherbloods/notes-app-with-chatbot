@@ -28,6 +28,7 @@ jobs:
           -p 3003:3003 \
           --restart unless-stopped \
           --network n8n-network \
+          --env-file notes-be/.env \
           notes-be
 
       - name: Build Frontend
