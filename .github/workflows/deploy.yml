@@ -26,8 +26,7 @@ jobs:
       - name: Build Backend
         run: |
           docker build \
-            --cache-from notes-be:latest \
-            -t notes-be:latest \
+            -t notes-be \
             /home/motherbloodss/Desktop/notes/notes-be
 
       - name: Restart Backend
@@ -40,13 +39,12 @@ jobs:
             --restart unless-stopped \
             --network n8n-network \
             --env-file /home/motherbloodss/Desktop/notes/notes-be/.env \
-            notes-be:latest
+            notes-be
 
       - name: Build Frontend
         run: |
-          docker build \
-            --cache-from notes-fe:latest \
-            -t notes-fe:latest \
+          docker build --no-cache \
+            -t notes-fe \
             /home/motherbloodss/Desktop/notes/notes-fe
 
       - name: Restart Frontend
@@ -58,7 +56,7 @@ jobs:
             -p 5174:5174 \
             --restart unless-stopped \
             --network n8n-network \
-            notes-fe:latest
+            notes-fe
 
       - name: Cleanup Env Files
         if: always()
