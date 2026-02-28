@@ -5,20 +5,18 @@ const LoginToken = require("../models/login-token");
 const { OAuth2Client } = require("google-auth-library");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
 const formatUser = (user) => ({
-  _id: user._id,
+  id: user._id.toString(),
   username: user.username,
-  firstName: user.firstName || null,
-  lastName: user.lastName || null,
-  email: user.email || null,
-  avatar: user.avatar || null,
-  provider: user.provider,
-  telegramId: user.telegramId || null,
-  googleId: user.googleId || null,
+  firstName: user.firstName ?? null,
+  lastName: user.lastName ?? null,
+  isLoggedWith: !!user.providers?.google?.id ? "google" : "telegram",
+  avatar: user.avatar ?? null,
 });
 
 const requestLoginService = async () => {
@@ -61,9 +59,9 @@ const verifyLoginTokenService = async (loginToken) => {
   }
 
   if (tokenDoc.status === "used" && tokenDoc.telegramId) {
-    const user = await User.findOne({ telegramId: tokenDoc.telegramId }).select(
-      "-__v",
-    );
+    const user = await User.findOne({
+      "providers.telegram.id": tokenDoc.telegramId,
+    }).select("-__v");
 
     if (!user) {
       throw { status: 404, message: "User not found" };
@@ -122,15 +120,34 @@ const loginWithGoogleService = async (tokenId) => {
       family_name,
     } = payload;
 
-    let user = await User.findOne({ googleId }).select("-__v");
+    let user = await User.findOne({ "providers.google.id": googleId }).select(
+      "-__v",
+    );
 
     if (!user && email) {
       user = await User.findOne({ email }).select("-__v");
 
       if (user) {
-        user.googleId = googleId;
-        user.avatar = picture;
-        if (!user.provider) user.provider = "google";
+        const existingGoogle = await User.findOne({
+          "providers.google.id": googleId,
+        });
+
+        if (
+          existingGoogle &&
+          existingGoogle._id.toString() !== user._id.toString()
+        ) {
+          throw new Error("Google account already linked to another user.");
+        }
+
+        user.providers.google = {
+          id: googleId,
+          email: email,
+        };
+
+        if (!user.avatar) {
+          user.avatar = picture;
+        }
+
         await user.save();
 
         console.log("🔗 Google linked to existing user:", user._id);
@@ -139,13 +156,17 @@ const loginWithGoogleService = async (tokenId) => {
 
     if (!user) {
       user = await User.create({
-        googleId,
         email,
         username: name || email,
         firstName: given_name || null,
         lastName: family_name || null,
         avatar: picture || null,
-        provider: "google",
+        providers: {
+          google: {
+            id: googleId,
+            email: email,
+          },
+        },
       });
 
       console.log("👤 New Google user created:", user._id);

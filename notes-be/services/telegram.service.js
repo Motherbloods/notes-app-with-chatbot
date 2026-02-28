@@ -38,14 +38,20 @@ const confirmLoginService = async ({
     throw { status: 401, message: "Token expired" };
   }
 
-  let user = await User.findOne({ telegramId });
+  let user = await User.findOne({ "providers.telegram.id": telegramId });
+
   if (!user) {
     console.log("👤 Creating new user for telegramId:", telegramId);
     user = await User.create({
-      telegramId,
       username: username || `user_${telegramId}`,
-      firstName,
-      lastName,
+      firstName: firstName || null,
+      lastName: lastName || null,
+      providers: {
+        telegram: {
+          id: telegramId,
+          username: username || null,
+        },
+      },
     });
     console.log("✅ User created:", user._id);
   } else {
@@ -61,7 +67,7 @@ const confirmLoginService = async ({
   return {
     message: "Login confirmed successfully",
     user: {
-      telegramId: user.telegramId,
+      telegramId: user.providers.telegram.id,
       username: user.username,
     },
   };
