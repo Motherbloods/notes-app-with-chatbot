@@ -6,47 +6,9 @@ const {
 const messages = require("../utils/messages");
 
 const token = process.env.TOKEN;
+if (!token) console.error("❌ TELEGRAM TOKEN NOT FOUND");
 
-if (!token) {
-  console.error("❌ TELEGRAM TOKEN NOT FOUND");
-}
-
-const bot = new TelegramBot(token, {
-  polling: {
-    autoStart: false,
-    interval: 300,
-    params: {
-      timeout: 10,
-    },
-  },
-});
-
-async function startBot() {
-  try {
-    await bot.startPolling();
-    console.log("🤖 Telegram bot started successfully");
-  } catch (err) {
-    console.error("❌ Failed to start polling:", err.message);
-  }
-}
-
-startBot();
-
-bot.on("polling_error", (err) => {
-  console.error("⚠️ Polling error:", err.message);
-});
-
-bot.on("error", (err) => {
-  console.error("⚠️ Telegram error:", err.message);
-});
-
-process.on("unhandledRejection", (err) => {
-  console.error("⚠️ Unhandled Rejection:", err);
-});
-
-process.on("uncaughtException", (err) => {
-  console.error("⚠️ Uncaught Exception:", err);
-});
+const bot = new TelegramBot(token, { polling: false });
 
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -66,16 +28,14 @@ bot.onText(/\/start(.*)/, async (msg, match) => {
       return bot.sendMessage(chatId, messages.invalidLink);
     }
 
-    const telegramData = {
-      linkToken,
-      telegramId: msg.from.id.toString(),
-      username: msg.from.username || "",
-      firstName: msg.from.first_name || "",
-      lastName: msg.from.last_name || "",
-    };
-
     try {
-      await confirmLinkTelegramService(telegramData);
+      await confirmLinkTelegramService({
+        linkToken,
+        telegramId: msg.from.id.toString(),
+        username: msg.from.username || "",
+        firstName: msg.from.first_name || "",
+        lastName: msg.from.last_name || "",
+      });
       return bot.sendMessage(chatId, messages.linkSuccess);
     } catch (error) {
       console.error("❌ Link telegram error:", error);
@@ -95,22 +55,18 @@ bot.onText(/\/start(.*)/, async (msg, match) => {
     }
   }
 
-  const loginToken = param;
-
-  if (!uuidRegex.test(loginToken)) {
+  if (!uuidRegex.test(param)) {
     return bot.sendMessage(chatId, messages.invalidLink);
   }
 
-  const telegramData = {
-    telegramId: msg.from.id.toString(),
-    username: msg.from.username || "",
-    firstName: msg.from.first_name || "",
-    lastName: msg.from.last_name || "",
-    loginToken,
-  };
-
   try {
-    await confirmLoginService(telegramData);
+    await confirmLoginService({
+      telegramId: msg.from.id.toString(),
+      username: msg.from.username || "",
+      firstName: msg.from.first_name || "",
+      lastName: msg.from.last_name || "",
+      loginToken: param,
+    });
     return bot.sendMessage(chatId, messages.loginSuccess);
   } catch (error) {
     console.error("❌ Bot login error:", error);
