@@ -1,5 +1,8 @@
 const TelegramBot = require("node-telegram-bot-api");
-const { confirmLoginService } = require("../services/telegram.service");
+const {
+  confirmLoginService,
+  confirmLinkTelegramService,
+} = require("../services/telegram.service");
 const messages = require("../utils/messages");
 
 const token = process.env.TOKEN;
@@ -50,16 +53,51 @@ const uuidRegex =
 
 bot.onText(/\/start(.*)/, async (msg, match) => {
   const chatId = msg.chat.id;
-  const loginToken = match[1].trim();
+  const param = match[1].trim();
 
-  console.log("🤖 Bot /start command:", { chatId, loginToken });
-
-  if (!loginToken) {
+  if (!param) {
     return bot.sendMessage(chatId, messages.welcome);
   }
 
+  if (param.startsWith("link_")) {
+    const linkToken = param.slice(5);
+
+    if (!uuidRegex.test(linkToken)) {
+      return bot.sendMessage(chatId, messages.invalidLink);
+    }
+
+    const telegramData = {
+      linkToken,
+      telegramId: msg.from.id.toString(),
+      username: msg.from.username || "",
+      firstName: msg.from.first_name || "",
+      lastName: msg.from.last_name || "",
+    };
+
+    try {
+      await confirmLinkTelegramService(telegramData);
+      return bot.sendMessage(chatId, messages.linkSuccess);
+    } catch (error) {
+      console.error("❌ Link telegram error:", error);
+      const errorMessages = {
+        "Token expired": messages.tokenExpired,
+        "Token already used": messages.tokenUsed,
+        "Invalid token": messages.invalidLink,
+        "Akun Telegram ini sudah terhubung ke akun lain.":
+          messages.alreadyLinkedOther,
+        "Akun Telegram sudah terhubung ke akun ini.":
+          messages.alreadyLinkedSelf,
+      };
+      return bot.sendMessage(
+        chatId,
+        errorMessages[error.message] || messages.generalError,
+      );
+    }
+  }
+
+  const loginToken = param;
+
   if (!uuidRegex.test(loginToken)) {
-    console.log("❌ Invalid UUID format:", loginToken);
     return bot.sendMessage(chatId, messages.invalidLink);
   }
 
@@ -71,31 +109,21 @@ bot.onText(/\/start(.*)/, async (msg, match) => {
     loginToken,
   };
 
-  console.log("📋 Telegram data:", telegramData);
-
   try {
-    const result = await confirmLoginService(telegramData);
-    console.log("✅ Login confirmed:", result);
-    bot.sendMessage(chatId, messages.loginSuccess);
+    await confirmLoginService(telegramData);
+    return bot.sendMessage(chatId, messages.loginSuccess);
   } catch (error) {
-    console.error("❌ Bot error:", {
-      status: error.status,
-      message: error.message,
-      stack: error.stack,
-    });
-
-    if (error.message === "Token expired") {
-      bot.sendMessage(chatId, messages.tokenExpired);
-    } else if (error.message === "Token already used") {
-      bot.sendMessage(chatId, messages.tokenUsed);
-    } else if (error.message === "Invalid token") {
-      bot.sendMessage(chatId, messages.invalidLink);
-    } else {
-      bot.sendMessage(chatId, messages.generalError);
-    }
+    console.error("❌ Bot login error:", error);
+    const errorMessages = {
+      "Token expired": messages.tokenExpired,
+      "Token already used": messages.tokenUsed,
+      "Invalid token": messages.invalidLink,
+    };
+    return bot.sendMessage(
+      chatId,
+      errorMessages[error.message] || messages.generalError,
+    );
   }
 });
-
-console.log("🤖 Telegram bot started successfully");
 
 module.exports = bot;
