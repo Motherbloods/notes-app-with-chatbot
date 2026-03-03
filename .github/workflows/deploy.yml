@@ -8,17 +8,17 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Pull latest code safely
-        run: |
-          cd /home/motherbloodss/Desktop/notes
-          git fetch origin
-          git reset --hard origin/main
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Create Backend Env
-        run: echo "${{ secrets.NOTES_BE_ENV }}" > /home/motherbloodss/Desktop/notes/notes-be/.env
+        run: echo "${{ secrets.NOTES_BE_ENV }}" > $GITHUB_WORKSPACE/notes-be/.env
 
       - name: Create Frontend Env
-        run: echo "${{ secrets.NOTES_FE_ENV }}" > /home/motherbloodss/Desktop/notes/notes-fe/.env
+        run: echo "${{ secrets.NOTES_FE_ENV }}" > $GITHUB_WORKSPACE/notes-fe/.env
 
       - name: Ensure network exists
         run: docker network inspect n8n-network >/dev/null 2>&1 || docker network create n8n-network
@@ -27,33 +27,31 @@ jobs:
         run: |
           docker build \
             -t notes-be \
-            /home/motherbloodss/Desktop/notes/notes-be
+            $GITHUB_WORKSPACE/notes-be
 
       - name: Restart Backend
         run: |
           docker rm -f notes-api || true
-
           docker run -d \
             --name notes-api \
             -p 3003:3003 \
             --restart unless-stopped \
             --network n8n-network \
-            --env-file /home/motherbloodss/Desktop/notes/notes-be/.env \
+            --env-file $GITHUB_WORKSPACE/notes-be/.env \
             notes-be
 
       - name: Build Frontend
         run: |
-          source /home/motherbloodss/Desktop/notes/notes-fe/.env
+          set -a; . $GITHUB_WORKSPACE/notes-fe/.env; set +a
           docker build --no-cache \
             --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL \
             --build-arg VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID \
             -t notes-fe \
-            /home/motherbloodss/Desktop/notes/notes-fe
+            $GITHUB_WORKSPACE/notes-fe
 
       - name: Restart Frontend
         run: |
           docker rm -f notes || true
-
           docker run -d \
             --name notes \
             -p 5174:5174 \
@@ -64,5 +62,5 @@ jobs:
       - name: Cleanup Env Files
         if: always()
         run: |
-          rm -f /home/motherbloodss/Desktop/notes/notes-be/.env
-          rm -f /home/motherbloodss/Desktop/notes/notes-fe/.env
+          rm -f $GITHUB_WORKSPACE/notes-be/.env
+          rm -f $GITHUB_WORKSPACE/notes-fe/.env
