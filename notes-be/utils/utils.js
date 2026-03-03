@@ -8,6 +8,7 @@ const telegramRoutes = require("../routes/telegram.route");
 const { authenticateToken } = require("../middleware/auth.middleware");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const { handleWebhook } = require("../controllers/telegram.controller");
 const app = express();
 
 app.use(
@@ -24,7 +25,7 @@ app.use(cookieParser());
 app.get("/", (req, res) => {
   res.send("Backend Notes API is running!");
 });
-
+app.post("/api/telegram/webhook", handleWebhook);
 app.use("/api", authRoutes);
 app.use("/api", telegramRoutes);
 app.use("/api", analyzingRoutes);
