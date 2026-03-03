@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const User = require("../models/user");
 const LoginToken = require("../models/login-token");
+const LinkToken = require("../models/link-token"); // model baru
 const { OAuth2Client } = require("google-auth-library");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -10,14 +11,20 @@ const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-const formatUser = (user) => ({
-  id: user._id.toString(),
-  username: user.username,
-  firstName: user.firstName ?? null,
-  lastName: user.lastName ?? null,
-  isLoggedWith: !!user.providers?.google?.id ? "google" : "telegram",
-  avatar: user.avatar ?? null,
-});
+const formatUser = (user) => {
+  const providers = [];
+  if (user.providers?.google?.id) providers.push("google");
+  if (user.providers?.telegram?.id) providers.push("telegram");
+
+  return {
+    id: user._id.toString(),
+    username: user.username,
+    firstName: user.firstName ?? null,
+    lastName: user.lastName ?? null,
+    providers,
+    avatar: user.avatar ?? null,
+  };
+};
 
 const requestLoginService = async () => {
   const loginToken = uuidv4();
@@ -149,8 +156,6 @@ const loginWithGoogleService = async (tokenId) => {
         }
 
         await user.save();
-
-        console.log("🔗 Google linked to existing user:", user._id);
       }
     }
 
@@ -168,20 +173,90 @@ const loginWithGoogleService = async (tokenId) => {
           },
         },
       });
-
-      console.log("👤 New Google user created:", user._id);
     }
 
     const token = generateToken(user._id);
-
-    return {
-      token,
-      user: formatUser(user),
-    };
+    return { token, user: formatUser(user) };
   } catch (error) {
     console.error("❌ Google auth error:", error.message);
-    throw new Error("Google authentication failed");
+    throw new Error(
+      error.message.includes("already linked")
+        ? error.message
+        : "Google authentication failed",
+    );
   }
+};
+
+const linkGoogleService = async (userId, idToken) => {
+  const ticket = await client.verifyIdToken({
+    idToken,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+  const payload = ticket.getPayload();
+  if (!payload) throw { status: 400, message: "Invalid Google token" };
+
+  const { sub: googleId, email, picture } = payload;
+
+  const existing = await User.findOne({ "providers.google.id": googleId });
+  if (existing && existing._id.toString() !== userId) {
+    throw {
+      status: 409,
+      message: "Akun Google ini sudah terhubung ke akun lain.",
+    };
+  }
+
+  const user = await User.findById(userId);
+  if (!user) throw { status: 404, message: "User not found" };
+  if (user.providers?.google?.id)
+    throw { status: 400, message: "Akun Google sudah terhubung ke akun ini." };
+
+  user.providers.google = { id: googleId, email };
+  if (!user.avatar) user.avatar = picture;
+  await user.save();
+
+  return formatUser(user);
+};
+
+const requestLinkTelegramService = async (userId) => {
+  await LinkToken.deleteMany({ userId, status: "pending" });
+
+  const linkToken = uuidv4();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+  await LinkToken.create({
+    token: linkToken,
+    userId,
+    status: "pending",
+    expiresAt,
+  });
+
+  const botUsername = process.env.TELEGRAM_BOT;
+  const telegramUrl = `https://t.me/${botUsername}?start=link_${linkToken}`;
+
+  return { linkToken, telegramUrl, expiresIn: 300 };
+};
+
+const verifyLinkTokenService = async (linkToken, userId) => {
+  const tokenDoc = await LinkToken.findOne({ token: linkToken, userId });
+  if (!tokenDoc) throw { status: 404, message: "Invalid token" };
+  if (tokenDoc.status === "expired" || tokenDoc.expiresAt < new Date())
+    throw { status: 401, message: "Token expired" };
+  if (tokenDoc.status === "pending") return { status: "pending" };
+
+  if (tokenDoc.status === "failed") {
+    await LinkToken.deleteOne({ _id: tokenDoc._id });
+    throw {
+      status: 409,
+      message: tokenDoc.failReason || "Gagal menautkan akun.",
+    };
+  }
+
+  if (tokenDoc.status === "used") {
+    await LinkToken.deleteOne({ _id: tokenDoc._id });
+    const user = await User.findById(userId).select("-__v");
+    return { status: "success", user: formatUser(user) };
+  }
+
+  throw { status: 400, message: "Invalid token status" };
 };
 
 module.exports = {
@@ -189,4 +264,7 @@ module.exports = {
   verifyLoginTokenService,
   verifyAuthService,
   loginWithGoogleService,
+  linkGoogleService,
+  requestLinkTelegramService,
+  verifyLinkTokenService,
 };
