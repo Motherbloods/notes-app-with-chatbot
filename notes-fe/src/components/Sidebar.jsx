@@ -1,20 +1,10 @@
 import SearchBar from "./Search";
-import {
-    Save,
-    MessageSquare,
-    Menu,
-    X,
-    LogOut,
-    MoreVertical,
-    Link2,
-    Sun,
-    Check,
-    Moon,
-} from "lucide-react";
+import { Save, MessageSquare, Menu, X, LogOut, MoreVertical, Link2, Sun, Moon, Check } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import categories from "../config/categories";
 import ThemeToggle from "./ThemeToggle";
+import LinkAccountModal from "./LinkAccountModal";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
@@ -24,12 +14,13 @@ function Sidebar({ notesCount }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [linkingProvider, setLinkingProvider] = useState(null);
     const menuRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
     const isNavigatingToNote = useRef(false);
 
-    const { user, logout } = useAuth();
+    const { user, setUser, logout } = useAuth();
     const { isDark } = useTheme();
 
     useEffect(() => {
@@ -100,6 +91,11 @@ function Sidebar({ notesCount }) {
         } finally {
             setIsLoggingOut(false);
         }
+    };
+
+    const handleLinkSuccess = (updatedUser) => {
+        setUser(updatedUser);
+        setLinkingProvider(null);
     };
 
     const providers = user?.providers || [];
@@ -230,15 +226,12 @@ function Sidebar({ notesCount }) {
                                 <img
                                     src={user.avatar}
                                     alt={user?.username}
-                                    className="w-10 h-10 rounded-full object-cover ring-2 ring-offset-1 ring-offset-transparent"
-                                    style={{ ringColor: gradStart }}
+                                    className="w-10 h-10 rounded-full object-cover"
                                 />
                             ) : (
                                 <div
                                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md"
-                                    style={{
-                                        background: `linear-gradient(135deg, ${gradStart}, ${gradEnd})`,
-                                    }}
+                                    style={{ background: `linear-gradient(135deg, ${gradStart}, ${gradEnd})` }}
                                 >
                                     {user?.username?.charAt(0)?.toUpperCase() || "?"}
                                 </div>
@@ -259,8 +252,7 @@ function Sidebar({ notesCount }) {
 
                         <button
                             onClick={() => setMenuOpen((prev) => !prev)}
-                            className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${menuOpen ? "bg-tertiary text-primary" : "hover:bg-tertiary text-secondary"}`}
-                            title="More options"
+                            className={`p-1.5 rounded-lg transition-colors shrink-0 ${menuOpen ? "bg-tertiary text-primary" : "hover:bg-tertiary text-secondary"}`}
                         >
                             <MoreVertical size={16} />
                         </button>
@@ -268,7 +260,7 @@ function Sidebar({ notesCount }) {
 
                     {menuOpen && (
                         <div className="absolute bottom-full right-0 mb-2 w-52 bg-primary border border-custom rounded-xl shadow-2xl py-2 z-50 overflow-hidden">
-                            <div className="flex items-center justify-between px-4 py-2.5 hover:bg-secondary transition-colors cursor-default">
+                            <div className="flex items-center justify-between px-4 py-2.5 hover:bg-secondary transition-colors">
                                 <div className="flex items-center gap-2.5 text-sm text-primary">
                                     {isDark
                                         ? <Moon size={15} className="text-blue-400" />
@@ -288,12 +280,10 @@ function Sidebar({ notesCount }) {
 
                                 {!hasGoogle && (
                                     <button
-                                        onClick={() => { }}
+                                        onClick={() => { setMenuOpen(false); setLinkingProvider("google"); }}
                                         className="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-secondary transition text-left group"
                                     >
-                                        <span className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-500/10 text-blue-400 text-xs font-bold flex-shrink-0 group-hover:bg-blue-500/20 transition-colors">
-                                            G
-                                        </span>
+                                        <span className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-500/10 text-blue-400 text-xs font-bold flex-shrink-0 group-hover:bg-blue-500/20 transition-colors">G</span>
                                         <span className="text-primary">Tautkan Google</span>
                                         <Link2 size={13} className="ml-auto text-secondary" />
                                     </button>
@@ -301,12 +291,10 @@ function Sidebar({ notesCount }) {
 
                                 {!hasTelegram && (
                                     <button
-                                        onClick={() => { }}
+                                        onClick={() => { setMenuOpen(false); setLinkingProvider("telegram"); }}
                                         className="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-secondary transition text-left group"
                                     >
-                                        <span className="w-6 h-6 flex items-center justify-center rounded-full bg-sky-500/10 text-sky-400 text-xs font-bold flex-shrink-0 group-hover:bg-sky-500/20 transition-colors">
-                                            TG
-                                        </span>
+                                        <span className="w-6 h-6 flex items-center justify-center rounded-full bg-sky-500/10 text-sky-400 text-xs font-bold flex-shrink-0 group-hover:bg-sky-500/20 transition-colors">TG</span>
                                         <span className="text-primary">Tautkan Telegram</span>
                                         <Link2 size={13} className="ml-auto text-secondary" />
                                     </button>
@@ -328,7 +316,7 @@ function Sidebar({ notesCount }) {
                                 <button
                                     onClick={handleLogout}
                                     disabled={isLoggingOut}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-red-500/10 transition text-left text-red-500 group disabled:opacity-60"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-red-500/10 transition text-left text-red-500 disabled:opacity-60"
                                 >
                                     {isLoggingOut ? (
                                         <svg
@@ -361,6 +349,14 @@ function Sidebar({ notesCount }) {
                     )}
                 </div>
             </div>
+
+            {linkingProvider && (
+                <LinkAccountModal
+                    provider={linkingProvider}
+                    onClose={() => setLinkingProvider(null)}
+                    onSuccess={handleLinkSuccess}
+                />
+            )}
         </>
     );
 }
