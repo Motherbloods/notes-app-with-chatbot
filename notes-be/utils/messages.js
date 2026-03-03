@@ -5,6 +5,9 @@ const messages = {
   tokenExpired: `⏱️ Token login sudah kadaluarsa. Silakan request login baru.`,
   tokenUsed: `⚠️ Token sudah digunakan.`,
   generalError: `❌ Terjadi kesalahan. Silakan coba lagi.`,
+  linkSuccess: `✅ Akun Telegram berhasil ditautkan.\n\nSilakan kembali ke aplikasi web.`,
+  alreadyLinkedOther: `❌ Akun Telegram ini sudah terhubung ke akun lain.`,
+  alreadyLinkedSelf: `ℹ️ Akun Telegram ini sudah terhubung ke akun Anda.`,
 };
 
 module.exports = messages;

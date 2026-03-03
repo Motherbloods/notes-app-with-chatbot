@@ -2,20 +2,6 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    telegramId: {
-      type: String,
-      unique: true,
-      sparse: true,
-      index: true,
-    },
-
-    googleId: {
-      type: String,
-      unique: true,
-      sparse: true,
-      index: true,
-    },
-
     email: {
       type: String,
       unique: true,
@@ -30,19 +16,28 @@ const userSchema = new mongoose.Schema(
     },
 
     firstName: String,
-
     lastName: String,
-
     avatar: String,
 
-    provider: {
-      type: String,
-      enum: ["telegram", "google"],
-    },
-
-    createdAt: {
-      type: Date,
-      default: Date.now,
+    providers: {
+      google: {
+        id: {
+          type: String,
+          unique: true,
+          sparse: true,
+          index: true,
+        },
+        email: String,
+      },
+      telegram: {
+        id: {
+          type: String,
+          unique: true,
+          sparse: true,
+          index: true,
+        },
+        username: String,
+      },
     },
   },
   { timestamps: true },
