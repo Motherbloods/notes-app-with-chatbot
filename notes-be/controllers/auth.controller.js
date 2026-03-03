@@ -3,6 +3,9 @@ const {
   verifyLoginTokenService,
   verifyAuthService,
   loginWithGoogleService,
+  linkGoogleService,
+  requestLinkTelegramService,
+  verifyLinkTokenService,
 } = require("../services/auth.service");
 
 const cookieOptions = {
@@ -29,7 +32,6 @@ const requestLogin = async (req, res) => {
 const verifyLoginToken = async (req, res) => {
   try {
     const { loginToken } = req.body;
-    console.log("ini loginToken", loginToken);
     const result = await verifyLoginTokenService(loginToken);
 
     if (result.status === "pending") {
@@ -97,10 +99,61 @@ const loginGoogle = async (req, res) => {
   }
 };
 
+const linkGoogle = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken)
+      return res.status(400).json({ error: "Google ID token is required" });
+
+    const user = await linkGoogleService(req.userId, idToken);
+    return res.status(200).json({ success: true, user });
+  } catch (error) {
+    console.error("❌ Link Google error:", error.message || error);
+    return res
+      .status(error.status || 500)
+      .json({ error: error.message || "Internal Server Error" });
+  }
+};
+
+const requestLinkTelegram = async (req, res) => {
+  try {
+    console.log("masuk");
+    const data = await requestLinkTelegramService(req.userId);
+    console.log("ini data", data);
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error("Request link telegram error:", error);
+    return res
+      .status(error.status || 500)
+      .json({ error: error.message || "Internal Server Error" });
+  }
+};
+
+const verifyLinkToken = async (req, res) => {
+  try {
+    const { linkToken } = req.body;
+    if (!linkToken)
+      return res.status(400).json({ error: "Link token required" });
+
+    const result = await verifyLinkTokenService(linkToken, req.userId);
+
+    if (result.status === "pending") return res.status(202).json(result);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Verify link token error:", error);
+    return res
+      .status(error.status || 500)
+      .json({ error: error.message || "Internal Server Error" });
+  }
+};
+
 module.exports = {
   requestLogin,
   verifyLoginToken,
   logout,
   verifyAuth,
   loginGoogle,
+  linkGoogle,
+  requestLinkTelegram,
+  verifyLinkToken,
 };
