@@ -21,3 +21,15 @@ export const verifyAuth = async () => {
 export const loginGoogle = async (idToken) => {
   return await client.post("/google", { idToken });
 };
+
+export const linkGoogle = async (idToken) => {
+  return await client.post("/link/google", { idToken });
+};
+
+export const requestLinkTelegram = async () => {
+  return await client.post("/link/telegram/request");
+};
+
+export const verifyLinkToken = async (linkToken) => {
+  return await client.post("/link/telegram/verify", { linkToken });
+};
