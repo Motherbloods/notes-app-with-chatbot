@@ -9,6 +9,8 @@ const { authenticateToken } = require("../middleware/auth.middleware");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const { handleWebhook } = require("../controllers/telegram.controller");
+const path = require('path'); // Import the 'path' module
+
 const app = express();
 
 app.use(
@@ -22,6 +24,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, '../public'))); // Add this line
 app.get("/", (req, res) => {
   res.send("Backend Notes API is running!");
 });
