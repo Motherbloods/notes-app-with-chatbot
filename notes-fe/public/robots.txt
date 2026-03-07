@@ -1,4 +1,2 @@
 User-agent: *
 Disallow: /login
-
-Sitemap: https://www.mindgarden.com/sitemap.xml
