@@ -196,7 +196,7 @@ function Sidebar({ notesCount }) {
                                     >
                                         <Icon size={20} className={color} />
                                         <span className="flex-1 text-left">{label}</span>
-                                        <span className="text-xs bg-tertiary px-2 py-1 rounded-full">
+                                        <span className="text-xs text-primary bg-tertiary px-2 py-1 rounded-full">
                                             {count}
                                         </span>
                                     </NavLink>

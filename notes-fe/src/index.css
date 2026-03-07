@@ -22,8 +22,8 @@
     --color-text-primary: #f3f4f6;
     --color-text-secondary: #9ca3af;
     --color-border: #374151;
-    --color-blue: #3b82f6;
-    --color-blue-hover: #60a5fa;
+    --color-blue: #2563eb;
+    --color-blue-hover: #1d4ed8;
   }
 }
 
@@ -35,8 +35,8 @@
   --color-text-primary: #f3f4f6;
   --color-text-secondary: #9ca3af;
   --color-border: #374151;
-  --color-blue: #3b82f6;
-  --color-blue-hover: #60a5fa;
+  --color-blue: #2563eb;
+  --color-blue-hover: #1d4ed8;
 }
 
 /* Light mode - manual toggle with .light class (override system dark) */
@@ -86,6 +86,8 @@ body {
   
   .btn-primary {
     background-color: var(--color-blue);
+    color: #ffffff;
+  font-weight: 500;
   }
   
   .btn-primary:hover {
