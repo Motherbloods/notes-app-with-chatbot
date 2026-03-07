@@ -1,14 +1,16 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
-import MainLayout from "./layout/MainLayout.jsx"
-import routes from "./config/routes.jsx"
 import { NotesProvider } from "./context/NotesContext.jsx"
 import { ThemeProvider } from "./context/ThemeContext.jsx"
 import { AuthProvider } from "./context/AuthContext.jsx"
+import { Toaster } from "react-hot-toast";
+import { Suspense, lazy } from "react";
+
+const MainLayout = lazy(() => import("./layout/MainLayout.jsx"));
 const Login = lazy(() => import("./pages/Login.jsx"));
 import ProtectedRoute from "./components/ProtectedRoute.jsx"
 import PublicRoute from "./components/PublicRoute.jsx"
-import { Toaster } from "react-hot-toast";
-import { Suspense, lazy } from "react";
+import routes from "./config/routes.jsx"
+import PageSkeleton from "./components/NotesSkeleton.jsx";
 
 function App() {
   return (
@@ -17,7 +19,7 @@ function App() {
         <AuthProvider>
           <NotesProvider>
             <Toaster position="top-right" reverseOrder={false} />
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<PageSkeleton />}>
               <Routes>
                 <Route
                   path="/login"

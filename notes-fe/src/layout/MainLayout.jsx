@@ -9,9 +9,9 @@ function MainLayout() {
         <div className="flex h-screen overflow-hidden bg-secondary text-primary">
             <Sidebar notesCount={notesCount} />
 
-            <div className="flex-1 p-6 overflow-hidden bg-primary">
+            <main className="flex-1 p-6 overflow-hidden bg-primary">
                 <Outlet />
-            </div>
+            </main>
         </div>
     );
 }
