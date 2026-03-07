@@ -57,6 +57,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
+          "syntax-highlighter": ["react-syntax-highlighter"],
+          markdown: ["react-markdown", "remark-gfm"],
           vendor: ["react", "react-dom", "react-router-dom"],
           axios: ["axios"],
           google: ["@react-oauth/google"],

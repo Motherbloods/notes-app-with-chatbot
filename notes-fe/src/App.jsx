@@ -4,10 +4,11 @@ import routes from "./config/routes.jsx"
 import { NotesProvider } from "./context/NotesContext.jsx"
 import { ThemeProvider } from "./context/ThemeContext.jsx"
 import { AuthProvider } from "./context/AuthContext.jsx"
-import Login from "./pages/Login.jsx"
+const Login = lazy(() => import("./pages/Login.jsx"));
 import ProtectedRoute from "./components/ProtectedRoute.jsx"
 import PublicRoute from "./components/PublicRoute.jsx"
 import { Toaster } from "react-hot-toast";
+import { Suspense, lazy } from "react";
 
 function App() {
   return (
@@ -16,39 +17,41 @@ function App() {
         <AuthProvider>
           <NotesProvider>
             <Toaster position="top-right" reverseOrder={false} />
-            <Routes>
-              <Route
-                path="/login"
-                element={
-                  <PublicRoute>
-                    <Login />
-                  </PublicRoute>
-                }
-              />
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <MainLayout />
-                  </ProtectedRoute>
-                }
-              >
-                {routes.map((route, index) => {
-                  return route.redirectTo ? (
-                    <Route
-                      key={index}
-                      path={route.path}
-                      element={<Navigate to={route.redirectTo} />}
-                    />
-                  ) : (
-                    <Route key={index} path={route.path} element={route.element} />
-                  );
-                })}
-              </Route>
-            </Routes>
+            <Suspense fallback={<div>Loading...</div>}>
+              <Routes>
+                <Route
+                  path="/login"
+                  element={
+                    <PublicRoute>
+                      <Login />
+                    </PublicRoute>
+                  }
+                />
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <MainLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  {routes.map((route, index) => {
+                    return route.redirectTo ? (
+                      <Route
+                        key={index}
+                        path={route.path}
+                        element={<Navigate to={route.redirectTo} />}
+                      />
+                    ) : (
+                      <Route key={index} path={route.path} element={route.element} />
+                    );
+                  })}
+                </Route>
+              </Routes>
+            </Suspense>
           </NotesProvider>
         </AuthProvider>
       </BrowserRouter>
-    </ThemeProvider>
+    </ThemeProvider >
   );
 }
 
