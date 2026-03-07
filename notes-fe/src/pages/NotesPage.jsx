@@ -215,6 +215,7 @@ function NotesPage() {
                     <select
                         value={dateFilter}
                         onChange={(e) => setDateFilter(e.target.value)}
+                        aria-label="Filter tanggal"
                         className="
             bg-primary
             text-primary

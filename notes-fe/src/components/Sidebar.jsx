@@ -121,6 +121,7 @@ function Sidebar({ notesCount }) {
         <>
             <button
                 onClick={() => setIsOpen(true)}
+                aria-label="Menu"
                 className="fixed top-6 left-2 z-50 md:hidden p-2 bg-primary rounded-lg shadow"
             >
                 <Menu size={24} />
@@ -146,6 +147,7 @@ function Sidebar({ notesCount }) {
                         <h1 className="text-[23px] font-bold text-primary">Second Brain</h1>
                         <button
                             onClick={() => setIsOpen(false)}
+                            aria-label="Tutup"
                             className="md:hidden p-2 rounded-lg hover:bg-secondary transition"
                         >
                             <X size={20} />
@@ -224,7 +226,9 @@ function Sidebar({ notesCount }) {
                         <div className="relative flex-shrink-0">
                             {user?.avatar ? (
                                 <img
-                                    src={user.avatar}
+                                    src={user.avatar.includes("googleusercontent.com")
+                                        ? user.avatar.replace(/=s\d+-c/, "=s40-c")
+                                        : user.avatar}
                                     alt={user?.username}
                                     className="w-10 h-10 rounded-full object-cover"
                                 />
@@ -253,6 +257,7 @@ function Sidebar({ notesCount }) {
                         <button
                             onClick={() => setMenuOpen((prev) => !prev)}
                             className={`p-1.5 rounded-lg transition-colors shrink-0 ${menuOpen ? "bg-tertiary text-primary" : "hover:bg-tertiary text-secondary"}`}
+                            aria-label="More options"
                         >
                             <MoreVertical size={16} />
                         </button>

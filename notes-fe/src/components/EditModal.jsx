@@ -71,6 +71,7 @@ function EditModal({ onClose, onSave, initialData }) {
                         onClick={onClose}
                         className="text-secondary hover:text-primary disabled:opacity-50"
                         disabled={isSaving}
+                        aria-label="Tutup"
                     >
                         <X size={24} />
                     </button>

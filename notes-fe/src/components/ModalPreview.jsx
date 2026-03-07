@@ -35,6 +35,7 @@ function ModalPreview({
 
                     <button
                         onClick={onClose}
+                        aria-label="Tutup"
                         className="
       text-secondary
       hover:text-primary

@@ -104,6 +104,7 @@ function LinkAccountModal({ provider, onClose, onSuccess }) {
                 {step !== "loading" && (
                     <button
                         onClick={onClose}
+                        aria-label="Tutup"
                         className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-secondary transition text-secondary"
                     >
                         <X size={16} />
