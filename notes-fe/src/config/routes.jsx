@@ -1,13 +1,12 @@
-import Notes from "../pages/Notes";
-import NotesPage from "../pages/NotesPage";
-import ChatBot from "../pages/ChatBot";
-import SearchResults from "../pages/SearchResults";
+import { lazy } from "react";
+
+const Notes = lazy(() => import("../pages/Notes"));
+const NotesPage = lazy(() => import("../pages/NotesPage"));
+const ChatBot = lazy(() => import("../pages/ChatBot"));
+const SearchResults = lazy(() => import("../pages/SearchResults"));
 
 const routes = [
-  {
-    path: "/",
-    redirectTo: "/notes/new",
-  },
+  { path: "/", redirectTo: "/notes/new" },
   { path: "/notes/new", element: <Notes /> },
   { path: "/notes/:categoryKey", element: <NotesPage /> },
   { path: "/chatbot", element: <ChatBot /> },
