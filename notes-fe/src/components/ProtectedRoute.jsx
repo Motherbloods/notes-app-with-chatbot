@@ -1,19 +1,19 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import PageSkeleton from "./NotesSkeleton";
+import LayoutSkeleton from "./LayoutSkeleton";
 
 const ProtectedRoute = ({ children }) => {
-    const { user, loading } = useAuth();
+  const { user, loading } = useAuth();
 
-    if (loading) {
-        return <PageSkeleton />;
-    }
+  if (loading) {
+    return <LayoutSkeleton />;
+  }
 
-    if (!user) {
-        return <Navigate to="/login" replace />;
-    }
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-    return children;
+  return children;
 };
 
 export default ProtectedRoute;

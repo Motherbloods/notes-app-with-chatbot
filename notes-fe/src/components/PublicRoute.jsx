@@ -1,19 +1,19 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import PageSkeleton from "./NotesSkeleton";
+import LayoutSkeleton from "./LayoutSkeleton";
 
 const PublicRoute = ({ children }) => {
-    const { user, loading } = useAuth();
+  const { user, loading } = useAuth();
 
-    if (loading) {
-        return <PageSkeleton />;
-    }
+  if (loading) {
+    return <LayoutSkeleton />;
+  }
 
-    if (user) {
-        return <Navigate to="/notes/new" replace />;
-    }
+  if (user) {
+    return <Navigate to="/notes/new" replace />;
+  }
 
-    return children;
+  return children;
 };
 
 export default PublicRoute;
