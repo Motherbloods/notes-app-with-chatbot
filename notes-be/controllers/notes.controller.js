@@ -5,6 +5,7 @@ const {
   updateNoteService,
   deleteNoteByIdService,
 } = require("../services/notes.service.js");
+const { generateTitleFromLLM } = require("../services/analyzing.service.js");
 
 const createNote = async (req, res) => {
   try {
@@ -20,6 +21,23 @@ const createNote = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating note:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const generateTitle = async (req, res) => {
+  try {
+    const { content } = req.body;
+    console.log(content);
+
+    if (!content?.trim()) {
+      return res.status(400).json({ error: "Content is required" });
+    }
+
+    const title = await generateTitleFromLLM(content);
+    res.status(200).json({ title });
+  } catch (error) {
+    console.error("Error generating title:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -79,6 +97,7 @@ const deleteNoteById = async (req, res) => {
 
 module.exports = {
   createNote,
+  generateTitle,
   getCategoriesNotesCount,
   getNotesByCategory,
   updateNote,

@@ -8,6 +8,12 @@ const noteSchema = new mongoose.Schema(
       index: true,
     },
 
+    title: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
     content: {
       type: String,
       required: true,
@@ -36,6 +42,11 @@ const noteSchema = new mongoose.Schema(
     },
 
     language: {
+      type: String,
+      default: null,
+    },
+
+    fileContext: {
       type: String,
       default: null,
     },

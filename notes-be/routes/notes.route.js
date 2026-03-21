@@ -7,6 +7,7 @@ const {
   getNotesByCategory,
   updateNote,
   deleteNoteById,
+  generateTitle,
 } = require("../controllers/notes.controller.js");
 const { authMiddleware } = require("../middleware/auth.middleware.js");
 
@@ -18,5 +19,6 @@ router.get("/notes/count", getCategoriesNotesCount);
 router.get("/notes/category/:categoryKey", getNotesByCategory);
 router.patch("/notes/:id", updateNote);
 router.delete("/notes/:id", deleteNoteById);
+router.post("/analyze/title", generateTitle);
 
 module.exports = router;
