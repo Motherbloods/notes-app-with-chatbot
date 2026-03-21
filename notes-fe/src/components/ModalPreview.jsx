@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Code2,
   Loader2,
+  Pencil,
 } from "lucide-react";
 
 function ModalPreview({
@@ -21,6 +22,8 @@ function ModalPreview({
   onSave,
   isSaving,
   isSkipMode = false,
+  noteTitle,
+  onTitleChange,
 }) {
   const [showSuggested, setShowSuggested] = useState(false);
 
@@ -34,7 +37,6 @@ function ModalPreview({
             <h3 className="text-xl font-bold text-primary">
               Konfirmasi Penyimpanan
             </h3>
-
             <p className="text-sm text-secondary mt-1">
               {isSkipMode
                 ? "Pilih kategori dan simpan tanpa analisis AI"
@@ -45,22 +47,46 @@ function ModalPreview({
           <button
             onClick={onClose}
             aria-label="Tutup"
-            className="
-      text-secondary
-      hover:text-primary
-      transition-colors
-    "
+            className="text-secondary hover:text-primary transition-colors"
           >
             <X size={24} />
           </button>
         </div>
 
         <div className="p-6 space-y-4">
+          {/* Title field */}
+          <div>
+            <label className="text-sm font-semibold text-primary flex items-center gap-1.5">
+              <Pencil size={14} />
+              Judul Note:
+            </label>
+            <input
+              type="text"
+              value={noteTitle}
+              onChange={(e) => onTitleChange(e.target.value)}
+              placeholder={
+                isSkipMode
+                  ? "Tambahkan judul (opsional)..."
+                  : "Judul di-generate AI, bisa diedit..."
+              }
+              className="mt-2 w-full px-4 py-2
+                bg-secondary
+                text-primary
+                border border-primary
+                rounded-xl
+                focus:outline-none
+                focus:ring-2
+                focus:ring-accent
+                transition
+                placeholder:text-secondary"
+            />
+          </div>
+
+          {/* Category */}
           <div>
             <label className="text-sm font-semibold text-primary">
               {isSkipMode ? "Pilih Kategori:" : "Kategori Terdeteksi:"}
             </label>
-
             <div className="mt-2">
               <select
                 value={category}
@@ -79,14 +105,14 @@ function ModalPreview({
                 <option value="ide">💡 Ide</option>
                 <option value="kode">💻 Kode</option>
                 <option value="catatan">📝 Catatan</option>
-                <option value="lainnya">📌 Catatan</option>
+                <option value="lainnya">📌 Lainnya</option>
               </select>
             </div>
           </div>
 
           {!isSkipMode && codeMetadata ? (
             <div className="space-y-4">
-              {/* Metadata */}
+              {/* Language + Confidence */}
               <div className="flex items-center gap-4 text-sm text-primary">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">Bahasa:</span>
@@ -104,6 +130,7 @@ function ModalPreview({
                 )}
               </div>
 
+              {/* fileContext */}
               {codeMetadata.fileContext && (
                 <div className="text-sm text-primary">
                   <span className="font-semibold">Konteks:</span>
@@ -140,16 +167,13 @@ function ModalPreview({
                           >
                             {err.type}
                           </span>
-
                           <span className="text-xs text-secondary">
                             Line {err.line}
                           </span>
                         </div>
-
                         <p className="text-sm text-primary mb-2">
                           {err.message}
                         </p>
-
                         {err.fix && (
                           <div className="mt-2 bg-primary/5 border border-primary/20 rounded-lg p-2">
                             <div className="flex items-center gap-1 text-xs text-primary font-medium mb-1">

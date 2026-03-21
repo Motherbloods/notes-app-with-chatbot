@@ -2,7 +2,7 @@ import { Loader2, Save, Zap } from "lucide-react";
 import { useState } from "react";
 import useSmartTextarea from "../hooks/useSmartTextarea";
 import ModalPreview from "../components/ModalPreview";
-import { analyzingNotes } from "../api/analyzing";
+import { analyzingNotes, generateNoteTitle } from "../api/analyzing";
 import { saveNoteData } from "../services/notesService";
 import { useNotes } from "../context/NotesContext";
 import toast from "react-hot-toast";
@@ -16,6 +16,7 @@ function Notes() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSkipMode, setIsSkipMode] = useState(false);
+  const [noteTitle, setNoteTitle] = useState("");
   const { incrementCounter } = useNotes();
 
   const saveNote = async () => {
@@ -24,6 +25,7 @@ function Notes() {
 
       const result = await saveNoteData(
         cleanedContent,
+        noteTitle.trim() || null,
         analysisResult,
         originalContent,
       );
@@ -33,6 +35,7 @@ function Notes() {
       setShowConfirmation(false);
       setInputContent("");
       setCleanedContent("");
+      setNoteTitle("");
       incrementCounter(analysisResult.category);
 
       toast.success("Berhasil Membuat Note");
@@ -89,13 +92,16 @@ function Notes() {
       const cleaned = cleanEmptyListItems(content);
       setOriginalContent(content);
 
-      const result = await analyzingNotes({ content: cleaned });
+      const [result, titleRes] = await Promise.all([
+        analyzingNotes({ content: cleaned }),
+        generateNoteTitle(cleaned),
+      ]);
 
       const data = result?.data || {};
-
       const reformattedContent = data.reformattedContent ?? cleaned;
 
       setCleanedContent(reformattedContent);
+      setNoteTitle(titleRes?.title || "");
 
       setAnalysisResult({
         category: data.category ?? "ide",
@@ -123,6 +129,7 @@ function Notes() {
     setOriginalContent(inputContent);
     setCleanedContent(cleaned);
     setAnalysisResult({ category: "ide" });
+    setNoteTitle("");
     setIsSkipMode(true);
     setShowConfirmation(true);
   };
@@ -216,6 +223,8 @@ flex items-center gap-2
         onSave={saveNote}
         isSaving={isSaving}
         isSkipMode={isSkipMode}
+        noteTitle={noteTitle}
+        onTitleChange={setNoteTitle}
       />
     </div>
   );

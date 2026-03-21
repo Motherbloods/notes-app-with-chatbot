@@ -12,211 +12,207 @@ import toast from "react-hot-toast";
 import NotesSkeleton from "../components/NotesSkeleton";
 
 function NotesPage() {
-    const { decrementCounter, incrementCounter } = useNotes();
-    const { categoryKey } = useParams();
-    const location = useLocation();
-    const navigate = useNavigate();
+  const { decrementCounter, incrementCounter } = useNotes();
+  const { categoryKey } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    const highlightId = location.state?.highlightId;
+  const highlightId = location.state?.highlightId;
 
-    const [notes, setNotes] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [dateFilter, setDateFilter] = useState("all");
-    const [customDate, setCustomDate] = useState("");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
-    const [noteToDelete, setNoteToDelete] = useState(null);
-    const [selectedNote, setSelectedNote] = useState(null);
-    const category = categoryKey;
+  const [notes, setNotes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState("all");
+  const [customDate, setCustomDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [noteToDelete, setNoteToDelete] = useState(null);
+  const [selectedNote, setSelectedNote] = useState(null);
+  const category = categoryKey;
 
-    useEffect(() => {
-        const fetchNotes = async () => {
-            setIsLoading(true);
-            try {
-                const data = await getNotesByCategory(category);
-                setNotes(data);
-            } catch (error) {
-                console.error("Error fetching notes:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        fetchNotes()
-    }, [category]);
-
-    useEffect(() => {
-        if (highlightId && notes.length > 0) {
-            const timer = setTimeout(() => {
-                const element = document.getElementById(`note-${highlightId}`);
-                if (element) {
-                    element.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                }
-            }, 100);
-
-            return () => clearTimeout(timer);
-        }
-    }, [highlightId, notes]);
-
-    useEffect(() => {
-        if (highlightId) {
-            const timer = setTimeout(() => {
-                navigate(location.pathname, { replace: true, state: {} });
-            }, 3000);
-
-            return () => clearTimeout(timer);
-        }
-    }, [highlightId, navigate, location.pathname]);
-
-    if (!categories[category]) {
-        return <p>Halaman tidak ditemukan</p>;
-    }
-
-    const filteredNotes = notes.filter(note => {
-        const noteDate = new Date(note.createdAt);
-
-        if (dateFilter === "today") return isToday(note.createdAt);
-        if (dateFilter === "week") return isThisWeek(note.createdAt);
-        if (dateFilter === "month") return isThisMonth(note.createdAt);
-
-        if (dateFilter === "custom-date" && customDate) {
-            const selected = new Date(customDate);
-            return (
-                noteDate.getDate() === selected.getDate() &&
-                noteDate.getMonth() === selected.getMonth() &&
-                noteDate.getFullYear() === selected.getFullYear()
-            );
-        }
-
-        if (dateFilter === "range" && startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999); // supaya include full hari
-
-            return noteDate >= start && noteDate <= end;
-        }
-
-        return true;
-    });
-
-
-    const archivedNotes = filteredNotes.filter(n => n.archived);
-
-    const toggleChecklistItem = async (noteId, checklistIndex) => {
-        try {
-            const note = notes.find(n => n._id === noteId);
-            if (!note) return;
-
-            const lines = note.content.split('\n');
-            let currentChecklistIndex = 0;
-
-            const updatedLines = lines.map(line => {
-                const checklistMatch = line.match(/^([-•*•]?\s*)\[([ xX])\]\s*(.+)$/);
-
-                if (checklistMatch) {
-                    if (currentChecklistIndex === checklistIndex) {
-                        const newCheckState = checklistMatch[2].toLowerCase() === 'x' ? ' ' : 'x';
-                        const textContent = checklistMatch[3];
-
-                        const textWithoutMetadata = textContent.replace(/\s*<!--completed:.*?-->\s*$/, '').trim();
-
-                        if (newCheckState === 'x') {
-                            const timestamp = new Date().toISOString();
-                            currentChecklistIndex++;
-                            return `- [${newCheckState}] ${textWithoutMetadata} <!--completed:${timestamp}-->`;
-                        } else {
-                            currentChecklistIndex++;
-                            return `- [${newCheckState}] ${textWithoutMetadata}`;
-                        }
-                    }
-                    currentChecklistIndex++;
-                }
-                return line;
-            });
-
-            const updatedContent = updatedLines.join('\n');
-
-            await updateNote(noteId, {
-                content: updatedContent,
-                reanalyze: false
-            });
-
-            setNotes(prevNotes =>
-                prevNotes.map(n =>
-                    (n._id === noteId)
-                        ? { ...n, content: updatedContent }
-                        : n
-                )
-            );
-
-        } catch (error) {
-            console.error("Error toggling checklist item:", error);
-        }
+  useEffect(() => {
+    const fetchNotes = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getNotesByCategory(category);
+        console.log("ini data", data);
+        setNotes(data);
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
+    fetchNotes();
+  }, [category]);
 
-    const handleConfirmDelete = async () => {
-        try {
-            await deleteNoteById(noteToDelete);
-            setNotes(prevNotes => prevNotes.filter(n => n._id !== noteToDelete));
-            setNoteToDelete(null);
-            decrementCounter(category);
-            toast.success("Berhasil Menghapus Note")
-        } catch (error) {
-            console.error("Error deleting note:", error);
-            toast.error("⚠️ Gagal menghapus note. Silakan coba lagi.");
+  useEffect(() => {
+    if (highlightId && notes.length > 0) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`note-${highlightId}`);
+        if (element) {
+          element.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
         }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [highlightId, notes]);
+
+  useEffect(() => {
+    if (highlightId) {
+      const timer = setTimeout(() => {
+        navigate(location.pathname, { replace: true, state: {} });
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [highlightId, navigate, location.pathname]);
+
+  if (!categories[category]) {
+    return <p>Halaman tidak ditemukan</p>;
+  }
+
+  const filteredNotes = notes.filter((note) => {
+    const noteDate = new Date(note.createdAt);
+
+    if (dateFilter === "today") return isToday(note.createdAt);
+    if (dateFilter === "week") return isThisWeek(note.createdAt);
+    if (dateFilter === "month") return isThisMonth(note.createdAt);
+
+    if (dateFilter === "custom-date" && customDate) {
+      const selected = new Date(customDate);
+      return (
+        noteDate.getDate() === selected.getDate() &&
+        noteDate.getMonth() === selected.getMonth() &&
+        noteDate.getFullYear() === selected.getFullYear()
+      );
     }
 
-    const handleEditNote = async (updatedNote) => {
-        try {
-            const response = await updateNote(updatedNote._id, updatedNote);
-            const savedNote = response.note;
+    if (dateFilter === "range" && startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // supaya include full hari
 
-            if (savedNote.category !== category) {
-                setNotes(prevNotes =>
-                    prevNotes.filter(n => n._id !== updatedNote._id)
-                );
+      return noteDate >= start && noteDate <= end;
+    }
 
-                // Update counter
-                decrementCounter(category);
-                incrementCounter(savedNote.category);
+    return true;
+  });
+
+  const archivedNotes = filteredNotes.filter((n) => n.archived);
+
+  const toggleChecklistItem = async (noteId, checklistIndex) => {
+    try {
+      const note = notes.find((n) => n._id === noteId);
+      if (!note) return;
+
+      const lines = note.content.split("\n");
+      let currentChecklistIndex = 0;
+
+      const updatedLines = lines.map((line) => {
+        const checklistMatch = line.match(/^([-•*•]?\s*)\[([ xX])\]\s*(.+)$/);
+
+        if (checklistMatch) {
+          if (currentChecklistIndex === checklistIndex) {
+            const newCheckState =
+              checklistMatch[2].toLowerCase() === "x" ? " " : "x";
+            const textContent = checklistMatch[3];
+
+            const textWithoutMetadata = textContent
+              .replace(/\s*<!--completed:.*?-->\s*$/, "")
+              .trim();
+
+            if (newCheckState === "x") {
+              const timestamp = new Date().toISOString();
+              currentChecklistIndex++;
+              return `- [${newCheckState}] ${textWithoutMetadata} <!--completed:${timestamp}-->`;
             } else {
-                setNotes(prevNotes =>
-                    prevNotes.map(n =>
-                        n._id === updatedNote._id
-                            ? { ...n, ...savedNote }
-                            : n
-                    )
-                );
+              currentChecklistIndex++;
+              return `- [${newCheckState}] ${textWithoutMetadata}`;
             }
-
-            setSelectedNote(null);
-        } catch (error) {
-            console.error("Error updating note:", error);
+          }
+          currentChecklistIndex++;
         }
+        return line;
+      });
+
+      const updatedContent = updatedLines.join("\n");
+
+      await updateNote(noteId, {
+        content: updatedContent,
+        reanalyze: false,
+      });
+
+      setNotes((prevNotes) =>
+        prevNotes.map((n) =>
+          n._id === noteId ? { ...n, content: updatedContent } : n,
+        ),
+      );
+    } catch (error) {
+      console.error("Error toggling checklist item:", error);
     }
+  };
 
-    return (
-        <>
-            <div className="flex items-center justify-between mb-6">
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteNoteById(noteToDelete);
+      setNotes((prevNotes) => prevNotes.filter((n) => n._id !== noteToDelete));
+      setNoteToDelete(null);
+      decrementCounter(category);
+      toast.success("Berhasil Menghapus Note");
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      toast.error("⚠️ Gagal menghapus note. Silakan coba lagi.");
+    }
+  };
 
-                <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
-                    {React.createElement(categories[category].icon, {
-                        size: 28,
-                        className: categories[category].color
-                    })}
-                    {categories[category].label}
-                </h2>
+  const handleEditNote = async (updatedNote) => {
+    try {
+      const response = await updateNote(updatedNote._id, updatedNote);
+      const savedNote = response.note;
 
-                <div className="flex items-center gap-2">
+      if (savedNote.category !== category) {
+        setNotes((prevNotes) =>
+          prevNotes.filter((n) => n._id !== updatedNote._id),
+        );
 
-                    <select
-                        value={dateFilter}
-                        onChange={(e) => setDateFilter(e.target.value)}
-                        aria-label="Filter tanggal"
-                        className="
+        // Update counter
+        decrementCounter(category);
+        incrementCounter(savedNote.category);
+      } else {
+        setNotes((prevNotes) =>
+          prevNotes.map((n) =>
+            n._id === updatedNote._id ? { ...n, ...savedNote } : n,
+          ),
+        );
+      }
+
+      setSelectedNote(null);
+    } catch (error) {
+      console.error("Error updating note:", error);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
+          {React.createElement(categories[category].icon, {
+            size: 28,
+            className: categories[category].color,
+          })}
+          {categories[category].label}
+        </h2>
+
+        <div className="flex items-center gap-2">
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            aria-label="Filter tanggal"
+            className="
             bg-primary
             text-primary
             border border-custom
@@ -228,21 +224,21 @@ function NotesPage() {
             focus:ring-(--color-blue)
             transition-colors
           "
-                    >
-                        <option value="all">Semua</option>
-                        <option value="today">Hari Ini</option>
-                        <option value="week">Minggu Ini</option>
-                        <option value="month">Bulan Ini</option>
-                        <option value="custom-date">Pilih Tanggal</option>
-                        <option value="range">Custom Range</option>
-                    </select>
+          >
+            <option value="all">Semua</option>
+            <option value="today">Hari Ini</option>
+            <option value="week">Minggu Ini</option>
+            <option value="month">Bulan Ini</option>
+            <option value="custom-date">Pilih Tanggal</option>
+            <option value="range">Custom Range</option>
+          </select>
 
-                    {dateFilter === "custom-date" && (
-                        <input
-                            type="date"
-                            value={customDate}
-                            onChange={(e) => setCustomDate(e.target.value)}
-                            className="
+          {dateFilter === "custom-date" && (
+            <input
+              type="date"
+              value={customDate}
+              onChange={(e) => setCustomDate(e.target.value)}
+              className="
               bg-primary
               text-primary
               border border-custom
@@ -254,84 +250,83 @@ function NotesPage() {
               focus:ring-(--color-blue)
               transition-colors
             "
-                        />
-                    )}
-
-                    {dateFilter === "range" && (
-                        <>
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="
-                bg-primary
-                text-primary
-                border border-custom
-                rounded-lg
-                px-3 py-2
-                text-sm
-                focus:outline-none
-                focus:ring-2
-                focus:ring-(--color-blue)
-                transition-colors
-              "
-                            />
-                            <span className="text-secondary">-</span>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="
-                bg-primary
-                text-primary
-                border border-custom
-                rounded-lg
-                px-3 py-2
-                text-sm
-                focus:outline-none
-                focus:ring-2
-                focus:ring-(--color-blue)
-                transition-colors
-              "
-                            />
-                        </>
-                    )}
-
-                </div>
-            </div>
-
-            <ArchivedNotice notes={archivedNotes} />
-
-            {isLoading ? (
-                <NotesSkeleton />
-            ) : (<NotesList
-                notes={filteredNotes}
-                toggleChecklistItem={toggleChecklistItem}
-                onDelete={setNoteToDelete}
-                onSelectNote={setSelectedNote}
-                onPinned={handleEditNote}
-                highlightId={highlightId}
             />
-            )}
+          )}
 
-            {noteToDelete && (
-                <ConfirmModal
-                    message="Yakin mau hapus catatan ini?"
-                    onCancel={() => setNoteToDelete(null)}
-                    onConfirm={handleConfirmDelete}
-                />
-            )}
+          {dateFilter === "range" && (
+            <>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="
+                bg-primary
+                text-primary
+                border border-custom
+                rounded-lg
+                px-3 py-2
+                text-sm
+                focus:outline-none
+                focus:ring-2
+                focus:ring-(--color-blue)
+                transition-colors
+              "
+              />
+              <span className="text-secondary">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="
+                bg-primary
+                text-primary
+                border border-custom
+                rounded-lg
+                px-3 py-2
+                text-sm
+                focus:outline-none
+                focus:ring-2
+                focus:ring-(--color-blue)
+                transition-colors
+              "
+              />
+            </>
+          )}
+        </div>
+      </div>
 
-            {selectedNote && (
-                <EditModal
-                    onClose={() => setSelectedNote(null)}
-                    onSave={handleEditNote}
-                    initialData={selectedNote}
-                />
-            )}
-        </>
-    );
+      <ArchivedNotice notes={archivedNotes} />
 
+      {isLoading ? (
+        <NotesSkeleton />
+      ) : (
+        <NotesList
+          notes={filteredNotes}
+          toggleChecklistItem={toggleChecklistItem}
+          onDelete={setNoteToDelete}
+          onSelectNote={setSelectedNote}
+          onPinned={handleEditNote}
+          highlightId={highlightId}
+        />
+      )}
+
+      {noteToDelete && (
+        <ConfirmModal
+          message="Yakin mau hapus catatan ini?"
+          onCancel={() => setNoteToDelete(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
+
+      {selectedNote && (
+        <EditModal
+          onClose={() => setSelectedNote(null)}
+          onSave={handleEditNote}
+          initialData={selectedNote}
+        />
+      )}
+    </>
+  );
 }
 
 export default NotesPage;
