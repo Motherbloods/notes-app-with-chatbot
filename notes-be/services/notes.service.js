@@ -6,10 +6,12 @@ const createNoteService = async (noteData) => {
   try {
     const {
       userId,
+      title,
       content,
       contentType,
       category,
       language,
+      fileContext,
       analysis,
       suggestedCode,
       originalContent,
@@ -45,6 +47,7 @@ const createNoteService = async (noteData) => {
 
     const newNote = new Note({
       userId,
+      title: title || null,
       content,
       originalContent: originalContent || null,
       wasReformatted,
@@ -52,12 +55,12 @@ const createNoteService = async (noteData) => {
       category,
       embedding: embeddingVector,
       language: language || null,
+      fileContext: fileContext || null,
       confidence,
       analysisErrors,
       lineFormats: lineFormats || [],
       suggestedCode: suggestedCode || null,
     });
-    console.log("New Note (object):", newNote.toObject());
 
     return await newNote.save();
   } catch (error) {
@@ -125,6 +128,7 @@ const updateNoteService = async (noteId, updateData, userId) => {
         updatedFields = {
           ...updatedFields,
           language: analyzing.codeMetadata?.language || "N/A",
+          fileContext: analyzing.codeMetadata?.fileContext || null,
           suggestedCode: analyzing.codeMetadata?.suggested || "",
           analysisErrors: analyzing.codeMetadata?.errors || [],
           confidence: analyzing.confidence || 0,
