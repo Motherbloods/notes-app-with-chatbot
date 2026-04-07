@@ -302,9 +302,6 @@ const generateTitleFromLLM = async (messageContent) => {
   }
 };
 
-/**
- * NEW: Parse date/time from user message
- */
 const parseDateFromMessage = (message) => {
   const now = new Date();
   const lowerMsg = message.toLowerCase();
@@ -510,31 +507,51 @@ const parseDateFromMessage = (message) => {
   return null;
 };
 
-/**
- * NEW: Search notes by date range
- */
 const searchNotesByDate = (notes, dateInfo) => {
   if (!dateInfo) return [];
 
   const { startDate, endDate } = dateInfo;
 
-  const filteredNotes = notes.filter((note) => {
+  // Filter 1: note dibuat pada tanggal itu
+  const createdOnDate = notes.filter((note) => {
     const noteDate = new Date(note.createdAt);
     return noteDate >= startDate && noteDate <= endDate;
   });
 
-  console.log(
-    `[DateSearch] Found ${filteredNotes.length} notes between ${startDate.toLocaleDateString("id-ID")} and ${endDate.toLocaleDateString("id-ID")}`,
-  );
+  // Filter 2: note yang menyebut tanggal itu di content/title
+  const day = startDate.getDate();
+  const monthNames = [
+    "januari",
+    "februari",
+    "maret",
+    "april",
+    "mei",
+    "juni",
+    "juli",
+    "agustus",
+    "september",
+    "oktober",
+    "november",
+    "desember",
+  ];
+  const monthName = monthNames[startDate.getMonth()];
+  const datePatterns = [
+    `${day} ${monthName}`, // "7 april"
+    `${String(day).padStart(2, "0")}/${String(startDate.getMonth() + 1).padStart(2, "0")}`, // "07/04"
+    startDate.toLocaleDateString("id-ID"), // "7/4/2026"
+  ];
 
-  return filteredNotes.sort(
-    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-  );
+  const mentionsDate = notes.filter((note) => {
+    if (createdOnDate.includes(note)) return false; // sudah masuk filter 1
+    const text = `${note.title || ""} ${note.content || ""}`.toLowerCase();
+    return datePatterns.some((pattern) => text.includes(pattern.toLowerCase()));
+  });
+
+  const combined = [...createdOnDate, ...mentionsDate];
+
+  return combined.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 };
 
-/**
- * Extract relevant keywords from user message
- */
 const extractKeywords = (message) => {
   const commonWords = [
     "apa",
@@ -622,26 +639,33 @@ const extractKeywords = (message) => {
   return [...new Set(extractedKeywords)];
 };
 
-/**
- * Search notes by keywords with relevance scoring
- */
 const searchNotesByKeywords = (notes, keywords) => {
   if (keywords.length === 0) return [];
 
   const scoredNotes = notes.map((note) => {
-    const content = note.content.toLowerCase();
+    const content = (note.content || "").toLowerCase();
+    const title = (note.title || "").toLowerCase();
+    const fileContext = (note.fileContext || "").toLowerCase();
     let score = 0;
 
     keywords.forEach((keyword) => {
       const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const regex = new RegExp(`\\b${escapeRegex(keyword)}\\b`, "gi");
-      const matches = content.match(regex);
-      if (matches) {
-        score += matches.length * 10;
-      }
-      if (content.includes(keyword)) {
-        score += 5;
-      }
+
+      // Search di content
+      const contentMatches = content.match(regex);
+      if (contentMatches) score += contentMatches.length * 10;
+      if (content.includes(keyword)) score += 5;
+
+      // Search di title — bobot lebih tinggi karena title = ringkasan note
+      const titleMatches = title.match(regex);
+      if (titleMatches) score += titleMatches.length * 20;
+      if (title.includes(keyword)) score += 10;
+
+      // Search di fileContext (untuk notes kode)
+      const contextMatches = fileContext.match(regex);
+      if (contextMatches) score += contextMatches.length * 8;
+      if (fileContext.includes(keyword)) score += 4;
     });
 
     return { note, score };
@@ -653,9 +677,6 @@ const searchNotesByKeywords = (notes, keywords) => {
     .map((item) => item.note);
 };
 
-/**
- * Prepare notes context with smart search (keyword + temporal)
- */
 const prepareNotesContext = (notes, userMessage = "") => {
   try {
     const sortedNotes = [...notes].sort(
@@ -680,6 +701,9 @@ const prepareNotesContext = (notes, userMessage = "") => {
       const noteData = {
         id: note._id,
         content: note.content,
+        title: note.title || null,
+        contentType: note.contentType || "text",
+        fileContext: note.fileContext || null,
         createdAt: note.createdAt,
         category: note.category,
       };
@@ -773,9 +797,6 @@ const prepareNotesContext = (notes, userMessage = "") => {
   }
 };
 
-/**
- * Generate bot response with improved notes context (keyword + temporal)
- */
 const generateBotResponse = async (
   userMessage,
   conversationHistory = [],
@@ -796,6 +817,11 @@ const generateBotResponse = async (
 - Completed tasks: ${notesContext.todoItems.completed.length}
 - Pending tasks: ${notesContext.todoItems.pending.length}
 - Last activity: ${notesContext.lastActivity ? new Date(notesContext.lastActivity).toLocaleString("id-ID") : "N/A"}
+
+**FORMAT NOTES:**
+- 📌 "Title" = judul note yang dibuat user (gunakan ini untuk identifikasi)
+- 📂 Context = deskripsi fungsi kode (khusus kategori kode)
+- Saat menjawab, sebutkan title note agar user mudah mengenalinya
 
 **ANSWERING QUESTIONS:**
 User dapat bertanya:
@@ -890,8 +916,8 @@ ATURAN PENTING:
 ${notesContext.dateFilteredNotes
   .map(
     (note, i) => `
-${i + 1}. [${note.category}] - ${new Date(note.createdAt).toLocaleString("id-ID")}
-${note.content.substring(0, 400)}${note.content.length > 400 ? "..." : ""}
+${i + 1}. [${note.category}]${note.title ? ` 📌 "${note.title}"` : ""} - ${new Date(note.createdAt).toLocaleString("id-ID")}
+${note.contentType === "code" && note.fileContext ? `   📂 Context: ${note.fileContext}\n` : ""}${note.content.substring(0, 400)}${note.content.length > 400 ? "..." : ""}
 `,
   )
   .join("\n")}`;
@@ -904,8 +930,8 @@ ${note.content.substring(0, 400)}${note.content.length > 400 ? "..." : ""}
 ${notesContext.relevantNotes
   .map(
     (note, i) => `
-${i + 1}. [${note.category}] - ${new Date(note.createdAt).toLocaleString("id-ID")}
-${note.content.substring(0, 300)}${note.content.length > 300 ? "..." : ""}
+${i + 1}. [${note.category}]${note.title ? ` 📌 "${note.title}"` : ""} - ${new Date(note.createdAt).toLocaleString("id-ID")}
+${note.contentType === "code" && note.fileContext ? `   📂 Context: ${note.fileContext}\n` : ""}${note.content.substring(0, 300)}${note.content.length > 300 ? "..." : ""}
 `,
   )
   .join("\n")}`;
@@ -918,8 +944,8 @@ ${note.content.substring(0, 300)}${note.content.length > 300 ? "..." : ""}
 ${notesContext.recentNotes
   .map(
     (note, i) => `
-${i + 1}. [${note.category}] - ${new Date(note.createdAt).toLocaleString("id-ID")}
-${note.content.substring(0, 200)}${note.content.length > 200 ? "..." : ""}
+${i + 1}. [${note.category}]${note.title ? ` 📌 "${note.title}"` : ""} - ${new Date(note.createdAt).toLocaleString("id-ID")}
+${note.contentType === "code" && note.fileContext ? `   📂 Context: ${note.fileContext}\n` : ""}${note.content.substring(0, 200)}${note.content.length > 200 ? "..." : ""}
 `,
   )
   .join("\n")}`;
