@@ -693,6 +693,7 @@ const prepareNotesContext = (notes, userMessage = "") => {
 
     const todoItems = {
       completed: [],
+      failed: [],
       pending: [],
     };
 
@@ -713,7 +714,10 @@ const prepareNotesContext = (notes, userMessage = "") => {
       if (note.content) {
         const lines = note.content.split("\n");
         lines.forEach((line) => {
-          if (line.trim().startsWith("- [x]")) {
+          if (
+            line.trim().startsWith("- [x]") &&
+            !line.includes("<!--failed-->")
+          ) {
             const match = line.match(/<!--completed:(.*?)-->/);
 
             if (match) {
@@ -726,9 +730,31 @@ const prepareNotesContext = (notes, userMessage = "") => {
                   .trim(),
                 completedAt,
                 noteId: note._id,
-                noteCreatedAt: note.createdAt, // for reference
+                noteCreatedAt: note.createdAt,
               });
             }
+          }
+          if (
+            line.trim().startsWith("- [x]") &&
+            line.includes("<!--failed-->")
+          ) {
+            todoItems.failed.push({
+              task: line
+                .replace("- [x]", "")
+                .replace("<!--failed-->", "")
+                .trim(),
+              noteId: note._id,
+              noteTitle: note.title || null,
+              noteCreatedAt: note.createdAt,
+            });
+          }
+          if (line.trim().match(/^- \[ \]\s+.+/)) {
+            todoItems.pending.push({
+              task: line.replace(/^- \[ \]\s+/, "").trim(),
+              noteId: note._id,
+              noteTitle: note.title || null,
+              noteCreatedAt: note.createdAt,
+            });
           }
         });
       }
@@ -787,7 +813,7 @@ const prepareNotesContext = (notes, userMessage = "") => {
     return {
       totalNotes: 0,
       categorizedNotes: {},
-      todoItems: { completed: [], pending: [] },
+      todoItems: { completed: [], failed: [], pending: [] },
       recentNotes: [],
       relevantNotes: [],
       dateFilteredNotes: [],
@@ -815,6 +841,7 @@ const generateBotResponse = async (
 **NOTES CONTEXT AVAILABLE:**
 - Total notes: ${notesContext.totalNotes}
 - Completed tasks: ${notesContext.todoItems.completed.length}
+- Failed/skip tasks: ${notesContext.todoItems.failed.length}
 - Pending tasks: ${notesContext.todoItems.pending.length}
 - Last activity: ${notesContext.lastActivity ? new Date(notesContext.lastActivity).toLocaleString("id-ID") : "N/A"}
 
@@ -956,7 +983,7 @@ ${note.contentType === "code" && note.fileContext ? `   📂 Context: ${note.fil
 
 **COMPLETED TASKS (sorted by completion time, newest first):**
 ${notesContext.todoItems.completed
-  .slice(0, 10) // Top 10 most recent
+  .slice(0, 10)
   .map(
     (task, i) => `
 ${i + 1}. "${task.task}"
@@ -975,14 +1002,31 @@ ${i + 1}. "${task.task}"
   .join("\n")}`;
       }
 
+      if (notesContext.todoItems.failed.length > 0) {
+        contextMessage += `
+
+**FAILED/SKIP TASKS (ditandai silang oleh user):**
+${notesContext.todoItems.failed
+  .map(
+    (task, i) => `
+${i + 1}. "${task.task}"
+   ${task.noteTitle ? `Dari note: "${task.noteTitle}"` : `Note ID: ${task.noteId}`}
+   Note dibuat: ${new Date(task.noteCreatedAt).toLocaleString("id-ID")}
+`,
+  )
+  .join("\n")}`;
+      }
+
       contextMessage += `
 
 **PENTING:** 
 - PRIORITASKAN notes yang difilter berdasarkan tanggal
 - Berikan jawaban spesifik berdasarkan content notes
 - Sebutkan tanggal pembuatan note untuk konteks temporal
-- **UNTUK "terakhir centang/selesai apa": GUNAKAN completed tasks list di atas, task NOMOR 1 adalah yang paling baru!**
-- Completed tasks SUDAH TERSORTIR by completedAt (descending), jadi yang paling atas = paling baru`;
+- **UNTUK "terakhir centang/selesai apa": GUNAKAN completed tasks list, task NOMOR 1 adalah yang paling baru!**
+- **UNTUK "target gagal/skip/silang": GUNAKAN failed tasks list di atas — HANYA items yang ada di sana yang gagal!**
+- Completed tasks SUDAH TERSORTIR by completedAt (descending), jadi yang paling atas = paling baru
+- Jangan anggap pending tasks sebagai failed — pending = belum dikerjakan sama sekali`;
 
       messages.push({
         role: "system",
