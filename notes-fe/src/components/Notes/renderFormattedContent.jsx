@@ -1,5 +1,4 @@
-import React from "react";
-import { CheckSquare, Square } from "lucide-react";
+import ChecklistItem from "./ChecklistItem";
 import CodeWithTabs from "./CodeWithTabs";
 
 function renderFormattedContent(note, toggleChecklistItem) {
@@ -23,11 +22,9 @@ function renderFormattedContent(note, toggleChecklistItem) {
             className="list-decimal list-inside space-y-1 my-2 text-primary"
           >
             {currentList.map((item, i) => (
-              <li key={i}>
-                {item}
-              </li>
+              <li key={i}>{item}</li>
             ))}
-          </ol>
+          </ol>,
         );
       } else if (currentListType === "bullet") {
         elements.push(
@@ -36,11 +33,9 @@ function renderFormattedContent(note, toggleChecklistItem) {
             className="list-disc list-inside space-y-1 my-2 text-primary"
           >
             {currentList.map((item, i) => (
-              <li key={i}>
-                {item}
-              </li>
+              <li key={i}>{item}</li>
             ))}
-          </ul>
+          </ul>,
         );
       }
       currentList = [];
@@ -55,38 +50,30 @@ function renderFormattedContent(note, toggleChecklistItem) {
     if (checklistMatch) {
       flushList();
 
-      const isChecked = checklistMatch[2].toLowerCase() === 'x';
-      const text = checklistMatch[3].replace(/\s*<!--completed:.*?-->\s*$/, '').trim();
+      const isChecked = checklistMatch[2].toLowerCase() === "x";
+      const rawText = checklistMatch[3];
+      const isFailed = rawText.includes("<!--failed-->");
+      const text = rawText
+        .replace(/\s*<!--completed:.*?-->\s*$/, "")
+        .replace(/\s*<!--failed-->\s*$/, "")
+        .trim();
+
       const currentChecklistIndex = checklistCounter;
       checklistCounter++;
 
+      let state = "none";
+      if (isFailed) state = "failed";
+      else if (isChecked) state = "done";
+
       elements.push(
-        <div
+        <ChecklistItem
           key={`checklist-${lineIndex}`}
-          className="flex items-start gap-2 my-1"
-        >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleChecklistItem(note._id, currentChecklistIndex);
-            }}
-            className="mt-0.5 shrink-0 hover:opacity-70 transition-opacity"
-            aria-label={isChecked ? "Uncheck item" : "Check item"}
-          >
-            {isChecked ? (
-              <CheckSquare size={18} className="text-green-600" />
-            ) : (
-              <Square size={18} className="text-secondary" />
-            )}
-          </button>
-          <span
-            className={`
-        ${isChecked ? "line-through text-secondary" : "text-primary"}
-      `}
-          >
-            {text}
-          </span>
-        </div>
+          noteId={note._id}
+          text={text}
+          state={state}
+          index={currentChecklistIndex}
+          toggleChecklistItem={toggleChecklistItem}
+        />,
       );
       return;
     }
@@ -119,11 +106,10 @@ function renderFormattedContent(note, toggleChecklistItem) {
       elements.push(
         <p
           key={`text-${lineIndex}`}
-          className="text-primary my-1"
+          className="text-sm text-primary my-1 leading-relaxed"
         >
           {line}
-        </p>
-
+        </p>,
       );
     } else {
       elements.push(<div key={`space-${lineIndex}`} className="h-2" />);
