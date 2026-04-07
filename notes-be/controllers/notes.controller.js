@@ -28,7 +28,6 @@ const createNote = async (req, res) => {
 const generateTitle = async (req, res) => {
   try {
     const { content } = req.body;
-    console.log(content);
 
     if (!content?.trim()) {
       return res.status(400).json({ error: "Content is required" });

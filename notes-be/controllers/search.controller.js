@@ -16,9 +16,6 @@ const keywordSearch = async (query, userId, limit = 20) => {
       .sort({ createdAt: -1 })
       .limit(limit);
 
-    console.log(
-      `🔍 Keyword search found ${results.length} results for userId: ${userId}`,
-    );
     return results;
   } catch (error) {
     console.error("Keyword search error:", error);
@@ -48,10 +45,6 @@ const searchNotes = async (req, res) => {
       ? req.query.mode
       : "hybrid";
 
-    console.log(
-      `🔍 Search mode: ${mode}, userId: ${userId}, query: "${query}"`,
-    );
-
     const topK = Number.isInteger(Number(req.query.topK))
       ? Number(req.query.topK)
       : 10;
@@ -70,8 +63,6 @@ const searchNotes = async (req, res) => {
         .select("+embedding")
         .lean();
 
-      console.log(`📊 Semantic search pool: ${notes.length} notes`);
-
       result = await searchSemanticNotesService(
         query,
         notes,
@@ -88,10 +79,6 @@ const searchNotes = async (req, res) => {
         .select("+embedding")
         .lean();
 
-      console.log(
-        `📊 Hybrid search: ${keywordResults.length} keyword + ${notes.length} semantic pool`,
-      );
-
       result = await searchHybridNotesService(
         query,
         keywordResults,
@@ -99,8 +86,6 @@ const searchNotes = async (req, res) => {
         topK,
       );
     }
-
-    console.log(`✅ Search complete: ${result.length} results returned`);
 
     return res.json(result);
   } catch (error) {

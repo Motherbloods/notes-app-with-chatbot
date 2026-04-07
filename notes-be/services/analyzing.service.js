@@ -343,9 +343,6 @@ const parseDateFromMessage = (message) => {
     const year = now.getFullYear();
     targetDate = new Date(year, month, day);
 
-    console.log(
-      `[DateParse] Found specific date: ${targetDate.toLocaleDateString("id-ID")}`,
-    );
     return {
       type: "specific_date",
       date: targetDate,
@@ -363,9 +360,6 @@ const parseDateFromMessage = (message) => {
       targetDate = new Date(now);
       targetDate.setDate(now.getDate() - daysAgo);
 
-      console.log(
-        `[DateParse] Found day name: ${dayName}, daysAgo: ${daysAgo}, date: ${targetDate.toLocaleDateString("id-ID")}`,
-      );
       return {
         type: "day_of_week",
         date: targetDate,
@@ -393,9 +387,6 @@ const parseDateFromMessage = (message) => {
     targetDate = new Date(now);
     targetDate.setDate(now.getDate() - 1);
 
-    console.log(
-      `[DateParse] Found "kemarin": ${targetDate.toLocaleDateString("id-ID")}`,
-    );
     return {
       type: "relative",
       date: targetDate,
@@ -419,9 +410,6 @@ const parseDateFromMessage = (message) => {
   }
 
   if (lowerMsg.includes("hari ini") || lowerMsg.includes("sekarang")) {
-    console.log(
-      `[DateParse] Found "hari ini": ${now.toLocaleDateString("id-ID")}`,
-    );
     return {
       type: "today",
       date: now,
@@ -450,9 +438,6 @@ const parseDateFromMessage = (message) => {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    console.log(
-      `[DateParse] Found "minggu ini": ${startOfWeek.toLocaleDateString("id-ID")} - ${endOfWeek.toLocaleDateString("id-ID")}`,
-    );
     return {
       type: "week",
       date: now,
@@ -493,9 +478,6 @@ const parseDateFromMessage = (message) => {
       59,
     );
 
-    console.log(
-      `[DateParse] Found "bulan ini": ${startOfMonth.toLocaleDateString("id-ID")} - ${endOfMonth.toLocaleDateString("id-ID")}`,
-    );
     return {
       type: "month",
       date: now,
@@ -770,27 +752,9 @@ const prepareNotesContext = (notes, userMessage = "") => {
     let relevantNotes = [];
     if (userMessage) {
       const keywords = extractKeywords(userMessage);
-      console.log(
-        `[ChatBot] Extracted keywords from "${userMessage}": [${keywords.join(", ")}]`,
-      );
 
       if (keywords.length > 0) {
         relevantNotes = searchNotesByKeywords(sortedNotes, keywords);
-        console.log(
-          `[ChatBot] Found ${relevantNotes.length} relevant notes for keywords: ${keywords.join(", ")}`,
-        );
-
-        if (relevantNotes.length > 0) {
-          console.log(
-            `[ChatBot] Top relevant note: ${relevantNotes[0].content.substring(0, 100)}...`,
-          );
-        } else {
-          console.log(
-            `[ChatBot] WARNING: No relevant notes found despite having ${sortedNotes.length} total notes`,
-          );
-        }
-      } else {
-        console.log(`[ChatBot] WARNING: No keywords extracted from message`);
       }
     }
 
@@ -828,7 +792,6 @@ const generateBotResponse = async (
   conversationHistory = [],
   allNotes = [],
 ) => {
-  console.log("ini allnotes", allNotes);
   try {
     const apikey = process.env.OPENROUTER_API_KEY;
     const notesContext = prepareNotesContext(allNotes, userMessage);
@@ -1039,8 +1002,6 @@ ${i + 1}. "${task.task}"
       content: userMessage,
     });
 
-    console.log("[ChatBot] Sending request to LLM with context...");
-
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
       {
@@ -1061,7 +1022,6 @@ ${i + 1}. "${task.task}"
     const data = await response.json();
     const botResponse = data.choices[0].message.content.trim();
 
-    console.log("[ChatBot] Bot response generated successfully");
     return botResponse;
   } catch (error) {
     console.error("Error in generateBotResponse:", error);

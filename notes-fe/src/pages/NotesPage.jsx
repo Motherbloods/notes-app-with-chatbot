@@ -34,7 +34,6 @@ function NotesPage() {
       setIsLoading(true);
       try {
         const data = await getNotesByCategory(category);
-        console.log("ini data", data);
         setNotes(data);
       } catch (error) {
         console.error("Error fetching notes:", error);

@@ -51,8 +51,6 @@ const sendMessageService = async ({
       conversation.title = title;
       conversation.userId = userId;
       await conversation.save();
-
-      console.log(`✅ New conversation created for userId: ${userId}`);
     }
 
     const message = new Message({
@@ -77,10 +75,6 @@ const sendMessageService = async ({
         .sort({ createdAt: -1 })
         .limit(50)
         .lean();
-
-      console.log(
-        `[ChatBot] Fetched ${allNotes.length} notes for userId: ${userId}`,
-      );
 
       const botContent = await generateBotResponse(content, history, allNotes);
 
@@ -117,10 +111,6 @@ const getConversationsService = async (userId) => {
       updatedAt: -1,
     });
 
-    console.log(
-      `📋 Found ${conversations.length} conversations for userId: ${userId}`,
-    );
-
     return conversations;
   } catch (error) {
     console.error("Error in getConversationsService:", error);
@@ -150,10 +140,6 @@ const getMessagesService = async (conversationId, userId) => {
     const messages = await Message.find({ conversationId })
       .sort({ createdAt: 1 })
       .select("role content createdAt -_id");
-
-    console.log(
-      `💬 Found ${messages.length} messages for conversationId: ${conversationId}`,
-    );
 
     return messages.map((msg) => ({
       role: msg.role,

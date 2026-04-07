@@ -117,9 +117,7 @@ const linkGoogle = async (req, res) => {
 
 const requestLinkTelegram = async (req, res) => {
   try {
-    console.log("masuk");
     const data = await requestLinkTelegramService(req.userId);
-    console.log("ini data", data);
     return res.status(200).json(data);
   } catch (error) {
     console.error("Request link telegram error:", error);

@@ -14,10 +14,6 @@ const sendMessage = async (req, res) => {
         .json({ error: "Unauthorized - User ID not found" });
     }
 
-    console.log(
-      `💬 Send message - userId: ${userId}, conversationId: ${conversationId}`,
-    );
-
     const result = await sendMessageService({
       conversationId,
       role,
@@ -41,8 +37,6 @@ const getConversations = async (req, res) => {
         .json({ error: "Unauthorized - User ID not found" });
     }
 
-    console.log(`📋 Get conversations - userId: ${userId}`);
-
     const conversations = await getConversationsService(userId);
     res.status(200).json(conversations);
   } catch (e) {
@@ -65,10 +59,6 @@ const getMessages = async (req, res) => {
         .status(401)
         .json({ error: "Unauthorized - User ID not found" });
     }
-
-    console.log(
-      `💬 Get messages - userId: ${userId}, conversationId: ${conversationId}`,
-    );
 
     const messages = await getMessagesService(conversationId, userId);
     res.json(messages);
