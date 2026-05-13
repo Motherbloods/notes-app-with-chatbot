@@ -34,10 +34,14 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 RUN chown -R nginx:nginx /usr/share/nginx/html \
     && find /usr/share/nginx/html -type f -exec chmod 644 {} \; \
     && find /usr/share/nginx/html -type d -exec chmod 755 {} \; \
-    && mkdir -p /tmp/client_body /tmp/proxy /tmp/fastcgi /tmp/uwsgi /tmp/scgi \
-    && chown -R nginx:nginx /tmp/client_body /tmp/proxy /tmp/fastcgi /tmp/uwsgi /tmp/scgi
+    && mkdir -p /var/cache/nginx/client_temp \
+                /var/cache/nginx/proxy_temp \
+                /var/cache/nginx/fastcgi_temp \
+                /var/cache/nginx/uwsgi_temp \
+                /var/cache/nginx/scgi_temp \
+    && chown -R nginx:nginx /var/cache/nginx \
+    && chmod -R 755 /var/cache/nginx
 
-# Expose port 5174
 EXPOSE 5174
 
 CMD ["nginx", "-g", "daemon off;"]
