@@ -70,7 +70,6 @@ function ChatBot() {
 
     try {
       const msg = await sendMessage(userMessage);
-      console.log(msg);
       const { botMessage, conversation } = msg;
 
       if (!activeChatId) {

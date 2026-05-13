@@ -302,9 +302,6 @@ const generateTitleFromLLM = async (messageContent) => {
   }
 };
 
-/**
- * NEW: Parse date/time from user message
- */
 const parseDateFromMessage = (message) => {
   const now = new Date();
   const lowerMsg = message.toLowerCase();
@@ -346,9 +343,6 @@ const parseDateFromMessage = (message) => {
     const year = now.getFullYear();
     targetDate = new Date(year, month, day);
 
-    console.log(
-      `[DateParse] Found specific date: ${targetDate.toLocaleDateString("id-ID")}`,
-    );
     return {
       type: "specific_date",
       date: targetDate,
@@ -366,9 +360,6 @@ const parseDateFromMessage = (message) => {
       targetDate = new Date(now);
       targetDate.setDate(now.getDate() - daysAgo);
 
-      console.log(
-        `[DateParse] Found day name: ${dayName}, daysAgo: ${daysAgo}, date: ${targetDate.toLocaleDateString("id-ID")}`,
-      );
       return {
         type: "day_of_week",
         date: targetDate,
@@ -396,9 +387,6 @@ const parseDateFromMessage = (message) => {
     targetDate = new Date(now);
     targetDate.setDate(now.getDate() - 1);
 
-    console.log(
-      `[DateParse] Found "kemarin": ${targetDate.toLocaleDateString("id-ID")}`,
-    );
     return {
       type: "relative",
       date: targetDate,
@@ -422,9 +410,6 @@ const parseDateFromMessage = (message) => {
   }
 
   if (lowerMsg.includes("hari ini") || lowerMsg.includes("sekarang")) {
-    console.log(
-      `[DateParse] Found "hari ini": ${now.toLocaleDateString("id-ID")}`,
-    );
     return {
       type: "today",
       date: now,
@@ -453,9 +438,6 @@ const parseDateFromMessage = (message) => {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    console.log(
-      `[DateParse] Found "minggu ini": ${startOfWeek.toLocaleDateString("id-ID")} - ${endOfWeek.toLocaleDateString("id-ID")}`,
-    );
     return {
       type: "week",
       date: now,
@@ -496,9 +478,6 @@ const parseDateFromMessage = (message) => {
       59,
     );
 
-    console.log(
-      `[DateParse] Found "bulan ini": ${startOfMonth.toLocaleDateString("id-ID")} - ${endOfMonth.toLocaleDateString("id-ID")}`,
-    );
     return {
       type: "month",
       date: now,
@@ -510,31 +489,51 @@ const parseDateFromMessage = (message) => {
   return null;
 };
 
-/**
- * NEW: Search notes by date range
- */
 const searchNotesByDate = (notes, dateInfo) => {
   if (!dateInfo) return [];
 
   const { startDate, endDate } = dateInfo;
 
-  const filteredNotes = notes.filter((note) => {
+  // Filter 1: note dibuat pada tanggal itu
+  const createdOnDate = notes.filter((note) => {
     const noteDate = new Date(note.createdAt);
     return noteDate >= startDate && noteDate <= endDate;
   });
 
-  console.log(
-    `[DateSearch] Found ${filteredNotes.length} notes between ${startDate.toLocaleDateString("id-ID")} and ${endDate.toLocaleDateString("id-ID")}`,
-  );
+  // Filter 2: note yang menyebut tanggal itu di content/title
+  const day = startDate.getDate();
+  const monthNames = [
+    "januari",
+    "februari",
+    "maret",
+    "april",
+    "mei",
+    "juni",
+    "juli",
+    "agustus",
+    "september",
+    "oktober",
+    "november",
+    "desember",
+  ];
+  const monthName = monthNames[startDate.getMonth()];
+  const datePatterns = [
+    `${day} ${monthName}`, // "7 april"
+    `${String(day).padStart(2, "0")}/${String(startDate.getMonth() + 1).padStart(2, "0")}`, // "07/04"
+    startDate.toLocaleDateString("id-ID"), // "7/4/2026"
+  ];
 
-  return filteredNotes.sort(
-    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-  );
+  const mentionsDate = notes.filter((note) => {
+    if (createdOnDate.includes(note)) return false; // sudah masuk filter 1
+    const text = `${note.title || ""} ${note.content || ""}`.toLowerCase();
+    return datePatterns.some((pattern) => text.includes(pattern.toLowerCase()));
+  });
+
+  const combined = [...createdOnDate, ...mentionsDate];
+
+  return combined.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 };
 
-/**
- * Extract relevant keywords from user message
- */
 const extractKeywords = (message) => {
   const commonWords = [
     "apa",
@@ -622,26 +621,33 @@ const extractKeywords = (message) => {
   return [...new Set(extractedKeywords)];
 };
 
-/**
- * Search notes by keywords with relevance scoring
- */
 const searchNotesByKeywords = (notes, keywords) => {
   if (keywords.length === 0) return [];
 
   const scoredNotes = notes.map((note) => {
-    const content = note.content.toLowerCase();
+    const content = (note.content || "").toLowerCase();
+    const title = (note.title || "").toLowerCase();
+    const fileContext = (note.fileContext || "").toLowerCase();
     let score = 0;
 
     keywords.forEach((keyword) => {
       const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const regex = new RegExp(`\\b${escapeRegex(keyword)}\\b`, "gi");
-      const matches = content.match(regex);
-      if (matches) {
-        score += matches.length * 10;
-      }
-      if (content.includes(keyword)) {
-        score += 5;
-      }
+
+      // Search di content
+      const contentMatches = content.match(regex);
+      if (contentMatches) score += contentMatches.length * 10;
+      if (content.includes(keyword)) score += 5;
+
+      // Search di title — bobot lebih tinggi karena title = ringkasan note
+      const titleMatches = title.match(regex);
+      if (titleMatches) score += titleMatches.length * 20;
+      if (title.includes(keyword)) score += 10;
+
+      // Search di fileContext (untuk notes kode)
+      const contextMatches = fileContext.match(regex);
+      if (contextMatches) score += contextMatches.length * 8;
+      if (fileContext.includes(keyword)) score += 4;
     });
 
     return { note, score };
@@ -653,9 +659,6 @@ const searchNotesByKeywords = (notes, keywords) => {
     .map((item) => item.note);
 };
 
-/**
- * Prepare notes context with smart search (keyword + temporal)
- */
 const prepareNotesContext = (notes, userMessage = "") => {
   try {
     const sortedNotes = [...notes].sort(
@@ -672,6 +675,7 @@ const prepareNotesContext = (notes, userMessage = "") => {
 
     const todoItems = {
       completed: [],
+      failed: [],
       pending: [],
     };
 
@@ -680,6 +684,9 @@ const prepareNotesContext = (notes, userMessage = "") => {
       const noteData = {
         id: note._id,
         content: note.content,
+        title: note.title || null,
+        contentType: note.contentType || "text",
+        fileContext: note.fileContext || null,
         createdAt: note.createdAt,
         category: note.category,
       };
@@ -689,7 +696,10 @@ const prepareNotesContext = (notes, userMessage = "") => {
       if (note.content) {
         const lines = note.content.split("\n");
         lines.forEach((line) => {
-          if (line.trim().startsWith("- [x]")) {
+          if (
+            line.trim().startsWith("- [x]") &&
+            !line.includes("<!--failed-->")
+          ) {
             const match = line.match(/<!--completed:(.*?)-->/);
 
             if (match) {
@@ -702,9 +712,31 @@ const prepareNotesContext = (notes, userMessage = "") => {
                   .trim(),
                 completedAt,
                 noteId: note._id,
-                noteCreatedAt: note.createdAt, // for reference
+                noteCreatedAt: note.createdAt,
               });
             }
+          }
+          if (
+            line.trim().startsWith("- [x]") &&
+            line.includes("<!--failed-->")
+          ) {
+            todoItems.failed.push({
+              task: line
+                .replace("- [x]", "")
+                .replace("<!--failed-->", "")
+                .trim(),
+              noteId: note._id,
+              noteTitle: note.title || null,
+              noteCreatedAt: note.createdAt,
+            });
+          }
+          if (line.trim().match(/^- \[ \]\s+.+/)) {
+            todoItems.pending.push({
+              task: line.replace(/^- \[ \]\s+/, "").trim(),
+              noteId: note._id,
+              noteTitle: note.title || null,
+              noteCreatedAt: note.createdAt,
+            });
           }
         });
       }
@@ -720,27 +752,9 @@ const prepareNotesContext = (notes, userMessage = "") => {
     let relevantNotes = [];
     if (userMessage) {
       const keywords = extractKeywords(userMessage);
-      console.log(
-        `[ChatBot] Extracted keywords from "${userMessage}": [${keywords.join(", ")}]`,
-      );
 
       if (keywords.length > 0) {
         relevantNotes = searchNotesByKeywords(sortedNotes, keywords);
-        console.log(
-          `[ChatBot] Found ${relevantNotes.length} relevant notes for keywords: ${keywords.join(", ")}`,
-        );
-
-        if (relevantNotes.length > 0) {
-          console.log(
-            `[ChatBot] Top relevant note: ${relevantNotes[0].content.substring(0, 100)}...`,
-          );
-        } else {
-          console.log(
-            `[ChatBot] WARNING: No relevant notes found despite having ${sortedNotes.length} total notes`,
-          );
-        }
-      } else {
-        console.log(`[ChatBot] WARNING: No keywords extracted from message`);
       }
     }
 
@@ -763,7 +777,7 @@ const prepareNotesContext = (notes, userMessage = "") => {
     return {
       totalNotes: 0,
       categorizedNotes: {},
-      todoItems: { completed: [], pending: [] },
+      todoItems: { completed: [], failed: [], pending: [] },
       recentNotes: [],
       relevantNotes: [],
       dateFilteredNotes: [],
@@ -773,15 +787,11 @@ const prepareNotesContext = (notes, userMessage = "") => {
   }
 };
 
-/**
- * Generate bot response with improved notes context (keyword + temporal)
- */
 const generateBotResponse = async (
   userMessage,
   conversationHistory = [],
   allNotes = [],
 ) => {
-  console.log("ini allnotes", allNotes);
   try {
     const apikey = process.env.OPENROUTER_API_KEY;
     const notesContext = prepareNotesContext(allNotes, userMessage);
@@ -794,8 +804,14 @@ const generateBotResponse = async (
 **NOTES CONTEXT AVAILABLE:**
 - Total notes: ${notesContext.totalNotes}
 - Completed tasks: ${notesContext.todoItems.completed.length}
+- Failed/skip tasks: ${notesContext.todoItems.failed.length}
 - Pending tasks: ${notesContext.todoItems.pending.length}
 - Last activity: ${notesContext.lastActivity ? new Date(notesContext.lastActivity).toLocaleString("id-ID") : "N/A"}
+
+**FORMAT NOTES:**
+- 📌 "Title" = judul note yang dibuat user (gunakan ini untuk identifikasi)
+- 📂 Context = deskripsi fungsi kode (khusus kategori kode)
+- Saat menjawab, sebutkan title note agar user mudah mengenalinya
 
 **ANSWERING QUESTIONS:**
 User dapat bertanya:
@@ -890,8 +906,8 @@ ATURAN PENTING:
 ${notesContext.dateFilteredNotes
   .map(
     (note, i) => `
-${i + 1}. [${note.category}] - ${new Date(note.createdAt).toLocaleString("id-ID")}
-${note.content.substring(0, 400)}${note.content.length > 400 ? "..." : ""}
+${i + 1}. [${note.category}]${note.title ? ` 📌 "${note.title}"` : ""} - ${new Date(note.createdAt).toLocaleString("id-ID")}
+${note.contentType === "code" && note.fileContext ? `   📂 Context: ${note.fileContext}\n` : ""}${note.content.substring(0, 400)}${note.content.length > 400 ? "..." : ""}
 `,
   )
   .join("\n")}`;
@@ -904,8 +920,8 @@ ${note.content.substring(0, 400)}${note.content.length > 400 ? "..." : ""}
 ${notesContext.relevantNotes
   .map(
     (note, i) => `
-${i + 1}. [${note.category}] - ${new Date(note.createdAt).toLocaleString("id-ID")}
-${note.content.substring(0, 300)}${note.content.length > 300 ? "..." : ""}
+${i + 1}. [${note.category}]${note.title ? ` 📌 "${note.title}"` : ""} - ${new Date(note.createdAt).toLocaleString("id-ID")}
+${note.contentType === "code" && note.fileContext ? `   📂 Context: ${note.fileContext}\n` : ""}${note.content.substring(0, 300)}${note.content.length > 300 ? "..." : ""}
 `,
   )
   .join("\n")}`;
@@ -918,8 +934,8 @@ ${note.content.substring(0, 300)}${note.content.length > 300 ? "..." : ""}
 ${notesContext.recentNotes
   .map(
     (note, i) => `
-${i + 1}. [${note.category}] - ${new Date(note.createdAt).toLocaleString("id-ID")}
-${note.content.substring(0, 200)}${note.content.length > 200 ? "..." : ""}
+${i + 1}. [${note.category}]${note.title ? ` 📌 "${note.title}"` : ""} - ${new Date(note.createdAt).toLocaleString("id-ID")}
+${note.contentType === "code" && note.fileContext ? `   📂 Context: ${note.fileContext}\n` : ""}${note.content.substring(0, 200)}${note.content.length > 200 ? "..." : ""}
 `,
   )
   .join("\n")}`;
@@ -930,7 +946,7 @@ ${note.content.substring(0, 200)}${note.content.length > 200 ? "..." : ""}
 
 **COMPLETED TASKS (sorted by completion time, newest first):**
 ${notesContext.todoItems.completed
-  .slice(0, 10) // Top 10 most recent
+  .slice(0, 10)
   .map(
     (task, i) => `
 ${i + 1}. "${task.task}"
@@ -949,14 +965,31 @@ ${i + 1}. "${task.task}"
   .join("\n")}`;
       }
 
+      if (notesContext.todoItems.failed.length > 0) {
+        contextMessage += `
+
+**FAILED/SKIP TASKS (ditandai silang oleh user):**
+${notesContext.todoItems.failed
+  .map(
+    (task, i) => `
+${i + 1}. "${task.task}"
+   ${task.noteTitle ? `Dari note: "${task.noteTitle}"` : `Note ID: ${task.noteId}`}
+   Note dibuat: ${new Date(task.noteCreatedAt).toLocaleString("id-ID")}
+`,
+  )
+  .join("\n")}`;
+      }
+
       contextMessage += `
 
 **PENTING:** 
 - PRIORITASKAN notes yang difilter berdasarkan tanggal
 - Berikan jawaban spesifik berdasarkan content notes
 - Sebutkan tanggal pembuatan note untuk konteks temporal
-- **UNTUK "terakhir centang/selesai apa": GUNAKAN completed tasks list di atas, task NOMOR 1 adalah yang paling baru!**
-- Completed tasks SUDAH TERSORTIR by completedAt (descending), jadi yang paling atas = paling baru`;
+- **UNTUK "terakhir centang/selesai apa": GUNAKAN completed tasks list, task NOMOR 1 adalah yang paling baru!**
+- **UNTUK "target gagal/skip/silang": GUNAKAN failed tasks list di atas — HANYA items yang ada di sana yang gagal!**
+- Completed tasks SUDAH TERSORTIR by completedAt (descending), jadi yang paling atas = paling baru
+- Jangan anggap pending tasks sebagai failed — pending = belum dikerjakan sama sekali`;
 
       messages.push({
         role: "system",
@@ -968,8 +1001,6 @@ ${i + 1}. "${task.task}"
       role: "user",
       content: userMessage,
     });
-
-    console.log("[ChatBot] Sending request to LLM with context...");
 
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -991,7 +1022,6 @@ ${i + 1}. "${task.task}"
     const data = await response.json();
     const botResponse = data.choices[0].message.content.trim();
 
-    console.log("[ChatBot] Bot response generated successfully");
     return botResponse;
   } catch (error) {
     console.error("Error in generateBotResponse:", error);

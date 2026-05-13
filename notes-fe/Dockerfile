@@ -2,16 +2,19 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Create non-root user khusus frontend notes
+RUN addgroup -S notes-fe-group && adduser -S notes-fe-user -G notes-fe-group
+
 # Copy package files
-COPY package*.json ./
+COPY --chown=notes-fe-user:notes-fe-group package*.json ./
 
 # Install dependencies
 RUN npm ci --no-audit --no-fund
 
 # Copy source code
-COPY . .
+COPY --chown=notes-fe-user:notes-fe-group . .
 
-# Build args untuk VITE env
+# Build args
 ARG VITE_API_BASE_URL
 ARG VITE_GOOGLE_CLIENT_ID
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
@@ -22,17 +25,23 @@ RUN npm run build
 # Stage 2: Serve dengan Nginx
 FROM nginx:alpine
 
-# Copy hasil build dari stage 1
+# Copy hasil build
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx config (opsional, untuk SPA routing)
+# Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    find /usr/share/nginx/html -type f -exec chmod 644 {} \; && \
-    find /usr/share/nginx/html -type d -exec chmod 755 {} \;
+RUN chown -R nginx:nginx /usr/share/nginx/html \
+    && find /usr/share/nginx/html -type f -exec chmod 644 {} \; \
+    && find /usr/share/nginx/html -type d -exec chmod 755 {} \; \
+    && mkdir -p /var/cache/nginx/client_temp \
+                /var/cache/nginx/proxy_temp \
+                /var/cache/nginx/fastcgi_temp \
+                /var/cache/nginx/uwsgi_temp \
+                /var/cache/nginx/scgi_temp \
+    && chown -R nginx:nginx /var/cache/nginx \
+    && chmod -R 755 /var/cache/nginx
 
-# Expose port 5174
 EXPOSE 5174
 
 CMD ["nginx", "-g", "daemon off;"]

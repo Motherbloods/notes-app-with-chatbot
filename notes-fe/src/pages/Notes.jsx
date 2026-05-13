@@ -30,8 +30,6 @@ function Notes() {
         originalContent,
       );
 
-      console.log("Simpan note:", result);
-
       setShowConfirmation(false);
       setInputContent("");
       setCleanedContent("");
@@ -111,8 +109,6 @@ function Notes() {
         lineFormats: data.lineFormats ?? [],
         reformattedContent,
       });
-
-      console.log("Hasil analisis:", data);
 
       setShowConfirmation(true);
     } catch (error) {

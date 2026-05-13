@@ -10,7 +10,7 @@ function useScrollToBottom() {
     if (!el) return;
 
     const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
-    console.log(isAtBottom);
+
     setShowScrollDown(!isAtBottom);
   };
 

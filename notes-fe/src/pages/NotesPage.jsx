@@ -34,7 +34,6 @@ function NotesPage() {
       setIsLoading(true);
       try {
         const data = await getNotesByCategory(category);
-        console.log("ini data", data);
         setNotes(data);
       } catch (error) {
         console.error("Error fetching notes:", error);
@@ -104,7 +103,7 @@ function NotesPage() {
 
   const archivedNotes = filteredNotes.filter((n) => n.archived);
 
-  const toggleChecklistItem = async (noteId, checklistIndex) => {
+  const toggleChecklistItem = async (noteId, checklistIndex, type = "done") => {
     try {
       const note = notes.find((n) => n._id === noteId);
       if (!note) return;
@@ -117,21 +116,32 @@ function NotesPage() {
 
         if (checklistMatch) {
           if (currentChecklistIndex === checklistIndex) {
-            const newCheckState =
-              checklistMatch[2].toLowerCase() === "x" ? " " : "x";
-            const textContent = checklistMatch[3];
+            currentChecklistIndex++;
 
-            const textWithoutMetadata = textContent
+            const rawText = checklistMatch[3];
+            const cleanText = rawText
               .replace(/\s*<!--completed:.*?-->\s*$/, "")
+              .replace(/\s*<!--failed-->\s*$/, "")
               .trim();
 
-            if (newCheckState === "x") {
+            const currentState =
+              checklistMatch[2].toLowerCase() === "x"
+                ? rawText.includes("<!--failed-->")
+                  ? "failed"
+                  : "done"
+                : "none";
+
+            // Klik state yang sama = toggle off (kembali ke none)
+            if (currentState === type) {
+              return `- [ ] ${cleanText}`;
+            }
+
+            if (type === "done") {
               const timestamp = new Date().toISOString();
-              currentChecklistIndex++;
-              return `- [${newCheckState}] ${textWithoutMetadata} <!--completed:${timestamp}-->`;
+              return `- [x] ${cleanText} <!--completed:${timestamp}-->`;
             } else {
-              currentChecklistIndex++;
-              return `- [${newCheckState}] ${textWithoutMetadata}`;
+              // type === "failed"
+              return `- [x] ${cleanText} <!--failed-->`;
             }
           }
           currentChecklistIndex++;
