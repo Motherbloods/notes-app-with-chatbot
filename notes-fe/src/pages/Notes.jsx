@@ -23,7 +23,7 @@ function Notes() {
     try {
       setIsSaving(true);
 
-      const result = await saveNoteData(
+      await saveNoteData(
         cleanedContent,
         noteTitle.trim() || null,
         analysisResult,

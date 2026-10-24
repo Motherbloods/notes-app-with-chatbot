@@ -15,7 +15,6 @@ function ModalPreview({
   inputContent,
   category,
   confidence,
-  errors,
   codeMetadata,
   lineFormats,
   onCategoryChange,

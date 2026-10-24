@@ -1,8 +1,4 @@
-import { useState } from "react";
-
 function ChecklistItem({ noteId, text, state, index, toggleChecklistItem }) {
-  const [hovered, setHovered] = useState(false);
-
   const isDone = state === "done";
   const isFailed = state === "failed";
   const isActive = isDone || isFailed;
@@ -10,8 +6,6 @@ function ChecklistItem({ noteId, text, state, index, toggleChecklistItem }) {
   return (
     <div
       className="group flex items-center gap-2 my-1 py-0.5 rounded-md transition-colors"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       {/* State indicator strip */}
       <div

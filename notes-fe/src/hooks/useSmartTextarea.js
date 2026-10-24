@@ -69,7 +69,6 @@ function useSmartTextarea(inputContent, setInputContent) {
 
       if (numberedMatch) {
         const currentNum = parseInt(numberedMatch[1], 10);
-        const restText = numberedMatch[2]; // <- "halo", "halo dunia", dll
         const nextNum = currentNum + 1;
 
         e.preventDefault();

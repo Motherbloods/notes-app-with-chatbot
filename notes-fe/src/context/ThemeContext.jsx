@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 const ThemeContext = createContext();
 
@@ -75,13 +82,13 @@ export function ThemeProvider({ children }) {
     applyThemeClass(isDark);
   }, []);
 
-  const toggleTheme = async () => {
+  const toggleTheme = useCallback(async () => {
     const next = !isDark;
     await animateThemeTransition(next, applyThemeClass);
     setIsDark(next);
-  };
+  }, [isDark]);
 
-  const value = useMemo(() => ({ isDark, toggleTheme }), [isDark]);
+  const value = useMemo(() => ({ isDark, toggleTheme }), [isDark, toggleTheme]);
 
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

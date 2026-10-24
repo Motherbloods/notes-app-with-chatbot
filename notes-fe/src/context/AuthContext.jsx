@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const response = await verifyAuth();
             setUser(response.user);
-        } catch (error) {
+        } catch {
             setUser(null);
         } finally {
             setLoading(false);
