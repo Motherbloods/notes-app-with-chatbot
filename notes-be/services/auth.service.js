@@ -2,13 +2,16 @@ const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const User = require("../models/user");
 const LoginToken = require("../models/login-token");
-const LinkToken = require("../models/link-token"); // model baru
+const LinkToken = require("../models/link-token");
 const { OAuth2Client } = require("google-auth-library");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+    algorithm: "HS256",
+  });
 };
 
 const formatUser = (user) => {
@@ -28,7 +31,7 @@ const formatUser = (user) => {
 
 const requestLoginService = async () => {
   const loginToken = uuidv4();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
   await LoginToken.create({
     token: loginToken,
@@ -118,6 +121,10 @@ const loginWithGoogleService = async (tokenId) => {
       throw new Error("Invalid Google token payload");
     }
 
+    if (!payload.email_verified) {
+      throw new Error("Google email is not verified");
+    }
+
     const {
       sub: googleId,
       email,
@@ -194,6 +201,8 @@ const linkGoogleService = async (userId, idToken) => {
   });
   const payload = ticket.getPayload();
   if (!payload) throw { status: 400, message: "Invalid Google token" };
+  if (!payload.email_verified)
+    throw { status: 400, message: "Google email is not verified" };
 
   const { sub: googleId, email, picture } = payload;
 

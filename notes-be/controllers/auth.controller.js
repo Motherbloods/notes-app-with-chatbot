@@ -8,14 +8,16 @@ const {
   verifyLinkTokenService,
 } = require("../services/auth.service");
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  secure: isProduction,
+  sameSite: process.env.COOKIE_SAMESITE || "lax",
   path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000,
-  ...(process.env.NODE_ENV === "production" && {
-    domain: ".motherbloodss.site",
+  ...(isProduction && {
+    domain: process.env.COOKIE_DOMAIN || ".motherbloodss.site",
   }),
 };
 
