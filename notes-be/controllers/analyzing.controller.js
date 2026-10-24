@@ -4,7 +4,7 @@ const analyzeNote = async (req, res) => {
   try {
     const { content } = req.body;
 
-    if (!content) {
+    if (typeof content !== "string" || !content.trim()) {
       return res.status(400).json({ error: "Note content is required" });
     }
 

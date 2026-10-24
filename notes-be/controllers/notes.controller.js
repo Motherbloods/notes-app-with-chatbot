@@ -29,7 +29,7 @@ const generateTitle = async (req, res) => {
   try {
     const { content } = req.body;
 
-    if (!content?.trim()) {
+    if (typeof content !== "string" || !content.trim()) {
       return res.status(400).json({ error: "Content is required" });
     }
 

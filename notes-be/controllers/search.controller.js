@@ -6,7 +6,8 @@ const {
 
 const keywordSearch = async (query, userId, limit = 20) => {
   try {
-    const regex = new RegExp(query, "i");
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(escaped, "i");
 
     const results = await Note.find({
       userId: userId,
@@ -25,7 +26,8 @@ const keywordSearch = async (query, userId, limit = 20) => {
 
 const searchNotes = async (req, res) => {
   try {
-    const query = req.query.q?.trim();
+    const query =
+      typeof req.query.q === "string" ? req.query.q.trim().slice(0, 500) : "";
     const userId = req.userId;
     if (!query) {
       return res.status(400).json({
@@ -45,8 +47,9 @@ const searchNotes = async (req, res) => {
       ? req.query.mode
       : "hybrid";
 
-    const topK = Number.isInteger(Number(req.query.topK))
-      ? Number(req.query.topK)
+    const requestedTopK = Number(req.query.topK);
+    const topK = Number.isInteger(requestedTopK)
+      ? Math.min(Math.max(requestedTopK, 1), 50)
       : 10;
 
     const minSimilarity = !isNaN(parseFloat(req.query.minSimilarity))

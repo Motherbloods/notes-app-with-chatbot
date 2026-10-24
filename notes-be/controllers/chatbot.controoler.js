@@ -5,8 +5,12 @@ const {
 } = require("../services/chatbot.service");
 const sendMessage = async (req, res) => {
   try {
-    const { conversationId, role, content } = req.body;
+    const { conversationId, content } = req.body;
     const userId = req.userId;
+
+    if (typeof content !== "string" || !content.trim() || content.length > 8000) {
+      return res.status(400).json({ error: "Invalid message content" });
+    }
 
     if (!userId) {
       return res
@@ -16,14 +20,17 @@ const sendMessage = async (req, res) => {
 
     const result = await sendMessageService({
       conversationId,
-      role,
-      content,
+      role: "user",
+      content: content.trim(),
       userId,
     });
     res.status(200).json(result);
   } catch (e) {
     console.error("❌ Send message error:", e);
-    res.status(500).json({ error: e.message });
+    if (e.message === "Conversation not found or access denied") {
+      return res.status(404).json({ error: e.message });
+    }
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -41,7 +48,7 @@ const getConversations = async (req, res) => {
     res.status(200).json(conversations);
   } catch (e) {
     console.error("❌ Get conversations error:", e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 

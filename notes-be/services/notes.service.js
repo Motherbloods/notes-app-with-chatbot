@@ -29,7 +29,6 @@ const createNoteService = async (noteData) => {
         }))
       : [];
 
-    // Validation
     if (!content || !category) {
       throw new Error("Missing required fields: content and category");
     }
@@ -111,9 +110,26 @@ const updateNoteService = async (noteId, updateData, userId) => {
 
     const shouldReanalyze = updateData.reanalyze === true;
 
-    let updatedFields = { ...updateData };
+    const allowedFields = [
+      "title",
+      "content",
+      "category",
+      "isPinned",
+      "originalContent",
+      "wasReformatted",
+      "contentType",
+      "language",
+      "fileContext",
+      "suggestedCode",
+      "lineFormats",
+      "analysisErrors",
+      "confidence",
+    ];
 
-    delete updatedFields.reanalyze;
+    let updatedFields = {};
+    for (const key of allowedFields) {
+      if (updateData[key] !== undefined) updatedFields[key] = updateData[key];
+    }
 
     if (shouldReanalyze) {
       const analyzing = await analyzingNotesWithLLM(updateData.content);
@@ -136,9 +152,11 @@ const updateNoteService = async (noteId, updateData, userId) => {
       }
     }
 
-    const updatedNote = await Note.findByIdAndUpdate(noteId, updatedFields, {
-      new: true,
-    });
+    const updatedNote = await Note.findOneAndUpdate(
+      { _id: noteId, userId },
+      { $set: updatedFields },
+      { new: true, runValidators: true },
+    );
     return updatedNote;
   } catch (error) {
     console.error("Error updating note:", error);
@@ -157,9 +175,7 @@ const deleteNoteByIdService = async (noteId, userId) => {
       throw new Error("Note not found or unauthorized");
     }
 
-    await Note.findByIdAndUpdate(noteId, {
-      deletedAt: new Date(),
-    });
+    await Note.updateOne({ _id: noteId, userId }, { deletedAt: new Date() });
   } catch (error) {
     console.error("Error soft deleting note:", error);
     throw error;
