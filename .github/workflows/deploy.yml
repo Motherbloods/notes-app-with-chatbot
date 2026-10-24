@@ -3,88 +3,167 @@ name: Deploy Notes Production
 on:
   workflow_dispatch:
 
-jobs:
-  deploy:
-    runs-on: self-hosted
+permissions:
+  contents: read
 
+concurrency:
+  group: deploy-notes-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Create Backend Env
-        run: |
-          printf "%s" "${{ secrets.NOTES_BE_ENV }}" > $GITHUB_WORKSPACE/notes-be/.env
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-      - name: Create Frontend Env
+      - name: Frontend install, lint, build
+        working-directory: notes-fe
         run: |
-          printf "%s" "${{ secrets.NOTES_FE_ENV }}" > $GITHUB_WORKSPACE/notes-fe/.env
+          npm ci --no-audit --no-fund
+          npm run lint
+          npm run build
+
+      - name: Backend install and syntax check
+        working-directory: notes-be
+        run: |
+          npm ci --omit=dev --no-audit --no-fund
+          find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
+
+  deploy:
+    needs: verify
+    runs-on: self-hosted
+    timeout-minutes: 20
+    env:
+      DOCKER_NETWORK: n8n-network
+      BE_CONTAINER: notes-api
+      FE_CONTAINER: notes
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Write environment files
+        env:
+          NOTES_BE_ENV: ${{ secrets.NOTES_BE_ENV }}
+          NOTES_FE_ENV: ${{ secrets.NOTES_FE_ENV }}
+        run: |
+          umask 077
+          printf '%s\n' "$NOTES_BE_ENV" > notes-be/.env
+          printf '%s\n' "$NOTES_FE_ENV" > notes-fe/.env
 
       - name: Ensure network exists
         run: |
-          docker network inspect n8n-network >/dev/null 2>&1 || docker network create n8n-network
+          docker network inspect "$DOCKER_NETWORK" >/dev/null 2>&1 || docker network create "$DOCKER_NETWORK"
 
-      - name: Build Backend
+      - name: Build images
         run: |
+          read_var() {
+            grep -E "^$1=" notes-fe/.env | head -n1 | cut -d= -f2- | tr -d '\r' | sed -e 's/^"//' -e 's/"$//'
+          }
+          api_url="$(read_var VITE_API_BASE_URL)"
+          client_id="$(read_var VITE_GOOGLE_CLIENT_ID)"
+          test -n "$api_url"
+          test -n "$client_id"
+          docker build -t "notes-be:${GITHUB_SHA}" -t notes-be:latest notes-be
           docker build \
-            -t notes-be:${{ github.sha }} \
-            -t notes-be:latest \
-            $GITHUB_WORKSPACE/notes-be
+            --build-arg "VITE_API_BASE_URL=${api_url}" \
+            --build-arg "VITE_GOOGLE_CLIENT_ID=${client_id}" \
+            -t "notes-fe:${GITHUB_SHA}" -t notes-fe:latest notes-fe
 
-      - name: Restart Backend
+      - name: Deploy backend with rollback
         run: |
-          docker rm -f notes-api || true
-          docker run -d \
-            --name notes-api \
-            -p 3003:3003 \
-            --restart unless-stopped \
-            --network n8n-network \
-            --env-file $GITHUB_WORKSPACE/notes-be/.env \
-            --cap-drop ALL \
-            notes-be:${{ github.sha }}
+          previous="$(docker inspect --format '{{.Config.Image}}' "$BE_CONTAINER" 2>/dev/null || true)"
+          start_backend() {
+            docker rm -f "$BE_CONTAINER" >/dev/null 2>&1 || true
+            docker run -d \
+              --name "$BE_CONTAINER" \
+              --init \
+              -p 3003:3003 \
+              --restart unless-stopped \
+              --network "$DOCKER_NETWORK" \
+              --env-file notes-be/.env \
+              --cap-drop ALL \
+              --security-opt no-new-privileges:true \
+              "$1"
+          }
+          wait_healthy() {
+            for _ in $(seq 1 30); do
+              state="$(docker inspect --format '{{.State.Health.Status}}' "$BE_CONTAINER" 2>/dev/null || echo none)"
+              if [ "$state" = "healthy" ]; then return 0; fi
+              sleep 3
+            done
+            return 1
+          }
+          start_backend "notes-be:${GITHUB_SHA}"
+          if ! wait_healthy; then
+            docker logs --tail 50 "$BE_CONTAINER" || true
+            if [ -n "$previous" ]; then
+              start_backend "$previous"
+              wait_healthy || true
+            fi
+            exit 1
+          fi
 
-      - name: Build Frontend
+      - name: Deploy frontend with rollback
         run: |
-          set -a
-          . $GITHUB_WORKSPACE/notes-fe/.env
-          set +a
+          previous="$(docker inspect --format '{{.Config.Image}}' "$FE_CONTAINER" 2>/dev/null || true)"
+          start_frontend() {
+            docker rm -f "$FE_CONTAINER" >/dev/null 2>&1 || true
+            docker run -d \
+              --name "$FE_CONTAINER" \
+              -p 5174:5174 \
+              --restart unless-stopped \
+              --network "$DOCKER_NETWORK" \
+              --cap-drop ALL \
+              --cap-add SETGID \
+              --cap-add SETUID \
+              --cap-add NET_BIND_SERVICE \
+              --security-opt no-new-privileges:true \
+              "$1"
+          }
+          wait_healthy() {
+            for _ in $(seq 1 20); do
+              state="$(docker inspect --format '{{.State.Health.Status}}' "$FE_CONTAINER" 2>/dev/null || echo none)"
+              if [ "$state" = "healthy" ]; then return 0; fi
+              sleep 3
+            done
+            return 1
+          }
+          start_frontend "notes-fe:${GITHUB_SHA}"
+          if ! wait_healthy; then
+            docker logs --tail 50 "$FE_CONTAINER" || true
+            if [ -n "$previous" ]; then
+              start_frontend "$previous"
+              wait_healthy || true
+            fi
+            exit 1
+          fi
 
-          docker build \
-            --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL \
-            --build-arg VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID \
-            -t notes-fe:${{ github.sha }} \
-            -t notes-fe:latest \
-            $GITHUB_WORKSPACE/notes-fe
-
-      - name: Restart Frontend
+      - name: Cleanup old images
+        if: success()
         run: |
-          docker rm -f notes || true
-          docker run -d \
-            --name notes \
-            -p 5174:5174 \
-            --restart unless-stopped \
-            --network n8n-network \
-            --cap-drop ALL \
-            --cap-add SETGID \
-            --cap-add SETUID \
-            --cap-add NET_BIND_SERVICE \
-            notes-fe:${{ github.sha }}
+          for repo in notes-be notes-fe; do
+            running="$(docker ps --format '{{.Image}}' | grep "^${repo}:" || true)"
+            docker image ls "$repo" --format '{{.Repository}}:{{.Tag}}' \
+              | grep -v ':latest$' \
+              | tail -n +6 \
+              | grep -vxF "$running" \
+              | xargs -r docker rmi || true
+          done
 
-      - name: Cleanup Old Images
+      - name: Remove environment files
         if: always()
         run: |
-          docker images notes-fe --format "{{.Tag}}" | \
-            grep -v latest | sort | head -n -3 | \
-            xargs -I {} docker rmi notes-fe:{} || true
-
-          docker images notes-be --format "{{.Tag}}" | \
-            grep -v latest | sort | head -n -3 | \
-            xargs -I {} docker rmi notes-be:{} || true
-
-      - name: Cleanup Env Files
-        if: always()
-        run: |
-          rm -f $GITHUB_WORKSPACE/notes-be/.env
-          rm -f $GITHUB_WORKSPACE/notes-fe/.env
+          rm -f notes-be/.env notes-fe/.env
