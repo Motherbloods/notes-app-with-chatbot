@@ -16,7 +16,7 @@ export default defineConfig({
     //     navigateFallbackDenylist: [/^\/api/],
     //     runtimeCaching: [
     //       {
-    //         urlPattern: /^https:\/\/notes\.motherbloodss\.site\/.*/i,
+    //         urlPattern: /^https:\/\/notes\.habibrk\.site\/.*/i,
     //         handler: "NetworkFirst",
     //         options: {
     //           networkTimeoutSeconds: 10,

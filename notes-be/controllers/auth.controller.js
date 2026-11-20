@@ -17,7 +17,7 @@ const cookieOptions = {
   path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000,
   ...(isProduction && {
-    domain: process.env.COOKIE_DOMAIN || ".motherbloodss.site",
+    domain: process.env.COOKIE_DOMAIN || ".habibrk.site",
   }),
 };
 
